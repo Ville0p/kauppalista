@@ -14,11 +14,17 @@ const TIEDOSTOT = [
   'icon-512.png',
   'apple-touch-icon.png',
 ];
+// Firebasen kirjasto on versioitu, joten sen tiedostot eivät muutu: välimuisti ensin.
+const FIREBASE = 'https://www.gstatic.com/firebasejs/';
+const FIREBASE_TIEDOSTOT = [
+  FIREBASE + '13.2.0/firebase-app.js',
+  FIREBASE + '13.2.0/firebase-firestore.js',
+];
 const AIKARAJA_MS = 4000;
 
 self.addEventListener('install', e => {
   self.skipWaiting();
-  e.waitUntil(caches.open(VALIMUISTI).then(c => c.addAll(TIEDOSTOT)));
+  e.waitUntil(caches.open(VALIMUISTI).then(c => c.addAll([...TIEDOSTOT, ...FIREBASE_TIEDOSTOT])));
 });
 
 self.addEventListener('activate', e => {
@@ -27,9 +33,20 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   const req = e.request;
-  if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
+  if (req.method !== 'GET') return;
+  if (req.url.startsWith(FIREBASE)) return e.respondWith(valimuististaEnsin(req));
+  if (new URL(req.url).origin !== location.origin) return;
   e.respondWith(verkostaEnsin(req));
 });
+
+async function valimuististaEnsin(req) {
+  const cache = await caches.open(VALIMUISTI);
+  const tallennettu = await cache.match(req);
+  if (tallennettu) return tallennettu;
+  const vastaus = await fetch(req);
+  if (vastaus.ok) cache.put(req, vastaus.clone());
+  return vastaus;
+}
 
 async function verkostaEnsin(req) {
   const cache = await caches.open(VALIMUISTI);

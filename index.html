@@ -6,6 +6,7 @@
   <title>Kauppalista</title>
   <meta name="color-scheme" content="light">
   <meta name="theme-color" content="#2e7d32">
+  <meta name="referrer" content="no-referrer">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icon-192.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -15,19 +16,36 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header><h1>Kauppalista</h1></header>
+  <header>
+    <h1>Kauppalista</h1>
+    <button id="jaa" type="button" hidden>
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 3v12M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Jaa
+    </button>
+  </header>
+
+  <p id="offline" hidden>Ei yhteyttä. Muutokset siirtyvät muille, kun yhteys palaa.</p>
 
   <main>
+    <p id="ladataan" class="viesti" hidden>Ladataan listaa…<br>Lista avautuu, kun yhteys toimii.</p>
+
+    <section id="paattynyt" class="viesti" hidden>
+      <p><strong>Lista on päättynyt.</strong><br>Siitä on poistettu kaikki tuotteet, tai sitä ei ole muokattu 7 päivään.</p>
+      <button id="uusi-lista" type="button">Aloita uusi lista</button>
+    </section>
+
     <ul id="lista"></ul>
-    <p id="tyhja">Lista on tyhjä. Lisää tuote alta.</p>
+    <p id="tyhja" class="viesti" hidden>Lista on tyhjä. Lisää tuote alta.</p>
     <button id="poista-otetut" type="button" hidden>Poista otetut</button>
   </main>
 
   <form id="lomake" autocomplete="off">
-    <input id="uusi" type="text" placeholder="Uusi tuote" aria-label="Uusi tuote" enterkeyhint="done">
+    <input id="uusi" type="text" placeholder="Uusi tuote" aria-label="Uusi tuote" maxlength="100" enterkeyhint="done">
     <button type="submit">Lisää</button>
   </form>
 
-  <script src="app.js"></script>
+  <div id="ilmoitus" role="status" hidden></div>
+
+  <script type="module" src="app.js"></script>
 </body>
 </html>

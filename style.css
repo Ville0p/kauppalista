@@ -27,11 +27,69 @@ body {
 }
 
 header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   background: var(--vihrea);
   color: #fff;
-  padding: calc(12px + env(safe-area-inset-top)) 16px 12px;
+  padding: calc(8px + env(safe-area-inset-top)) 12px 8px 16px;
+  min-height: 64px;
 }
 h1 { margin: 0; font-size: 24px; }
+
+#jaa {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 18px;
+  font-weight: 700;
+  color: var(--vihrea);
+  background: #fff;
+  border: 0;
+  border-radius: 24px;
+}
+#jaa:active { filter: brightness(0.92); }
+
+#offline {
+  margin: 0;
+  padding: 10px 16px;
+  font-size: 16px;
+  color: #5d4300;
+  background: #fff4d6;
+  border-bottom: 1px solid #f0dca0;
+}
+
+.viesti {
+  margin: 0;
+  padding: 40px 16px;
+  text-align: center;
+  color: var(--harmaa);
+}
+#paattynyt p { margin: 0 0 24px; }
+#paattynyt strong { color: var(--teksti); }
+#uusi-lista {
+  min-height: 56px;
+  padding: 0 28px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--vihrea);
+  border: 0;
+  border-radius: 12px;
+}
+
+#ilmoitus {
+  position: fixed;
+  left: 50%;
+  bottom: calc(100px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  padding: 12px 20px;
+  font-size: 17px;
+  color: #fff;
+  background: rgba(27, 27, 27, 0.92);
+  border-radius: 24px;
+}
 
 main { flex: 1; padding-bottom: 8px; }
 
@@ -84,13 +142,6 @@ li.otettu .nimi::before { content: "✓"; background: var(--vihrea); }
 }
 
 .nimi:active, .poista:active { background: var(--pohja); }
-
-#tyhja {
-  margin: 0;
-  padding: 40px 16px;
-  text-align: center;
-  color: var(--harmaa);
-}
 
 #poista-otetut {
   display: block;
