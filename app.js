@@ -360,6 +360,22 @@ function nayta_ilmoitus(teksti) {
 
 // --- Yhteyden tila ---
 
+// --- Näkyvä alue ---
+// Sovelluksen korkeus seuraa näkyvää aluetta (selainpalkki, näppäimistö), jotta Uusi tuote -kenttä
+// on aina näkyvissä listan alla eikä peitä listan alinta tuotetta (ks. style.css, --nakyva).
+if (window.visualViewport) {
+  const paivitaKorkeus = () => {
+    // * scale: zoomatessa (nipistys) näkyvä alue pienenee, mutta sovelluksen koko ei saa muuttua.
+    const korkeus = visualViewport.height * visualViewport.scale;
+    document.documentElement.style.setProperty('--nakyva', korkeus + 'px');
+    // iOS siirtää sivua näppäimistön tieltä; sovellus mahtuu nyt näkyvään alueeseen, joten palautetaan.
+    if (window.scrollY) window.scrollTo(0, 0);
+  };
+  visualViewport.addEventListener('resize', paivitaKorkeus);
+  visualViewport.addEventListener('scroll', paivitaKorkeus);
+  paivitaKorkeus();
+}
+
 const paivitaYhteys = () => { offline.hidden = navigator.onLine; };
 addEventListener('online', paivitaYhteys);
 addEventListener('offline', paivitaYhteys);

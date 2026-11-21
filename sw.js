@@ -11,6 +11,7 @@ const TIEDOSTOT = [
   'app.js',
   'osastot.js',
   'emojit.js',
+  'hupisanat.js',
   'asetukset.js',
   'kopiot.js',
   'siivous.js',

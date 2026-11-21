@@ -7,6 +7,12 @@
 // Monisanaisesta nimestä (esim. "maito rasvaton") käytetään viimeistä tunnettua sanaa.
 
 import { CLDR } from './emojit.js';
+import { HUPISANAT } from './hupisanat.js';
+
+// Hupisanat: tuntematon tuote, jonka nimi on täsmälleen emojin CLDR-nimi (hai, joulupukki), saa
+// emojin mutta jää Muut-osastoon. Omat lisäykset ja poikkeukset voittavat CLDR:n nimet.
+const HUPI = new Map(HUPISANAT.trim().split('\n').map(rivi => rivi.split('|')));
+for (const [nimi, emoji] of [['dinosaurus', '🦕'], ['kissa', '🐱'], ['koira', '🐶']]) HUPI.set(nimi, emoji);
 
 // Osaston tunnus on sen paikka tässä taulukossa. Tunnus tallentuu listaan, kun käyttäjä valitsee
 // tuotteelle osaston itse, joten tunnuksia ei saa muuttaa: uusi osasto saa aina uuden tunnuksen
@@ -70,10 +76,10 @@ const SANASTO = [
    gorgonzola 🧀|havarti 🧀|maasdam 🧀|gruyere 🧀|grana_padano 🧀|apetina 🧀|
    voi/voita 🧈|levite/levitteet/levitteitä 🧈|margariini 🧈|oivariini 🧈|voimariini 🧈|keiju 🧈|flora 🧈|
    becel 🧈|benecol 🧈|bregott 🧈|rama 🧈|
-   muna 🥚|kaurajuoma|soijajuoma|mantelijuoma|jogurttijuoma|maitojuoma|kefiiri|tofu|hummus|tzatziki|
+   muna 🥚|kaurajuoma|soijajuoma|mantelijuoma|jogurttijuoma|maitojuoma|kefiiri|mämmi|pasha|tofu|hummus|tzatziki|
    kaurafraiche|ranskankerma|oatly|alpro`,
   // 4 Pakasteet
-  `pakaste|jäätelö 🍦|jätski 🍦|pehmis 🍦|jäätelöpuikko 🍦|jäätelökakku 🍨|mehujää/mehujäät/mehujäitä|pizza 🍕|
+  `pakaste|jäätelö 🍦|jätski 🍦|pehmis 🍦|jäätelöpuikko 🍦|taikina|piparkakkutaikina|jäätelökakku 🍨|mehujää/mehujäät/mehujäitä|pizza 🍕|
    ranskalainen 🍟|ranskis/ranskikset/ranskiksia 🍟|kalapuikko|herne|hernekeitto|maissi 🌽|
    vihannessekoitus|wokkivihannes/wokkivihannekset/wokkivihanneksia|jääpala 🧊|jääkuutio 🧊|
    hampurilainen 🍔`,
@@ -88,20 +94,20 @@ const SANASTO = [
    marianne 🍬|haribo 🍬|lakritsi|salmiakki|purukumi|tikkari 🍭|sipsi|lastu|pringles|taffel|popcorn 🍿|
    pähkinä|maapähkinä 🥜|manteli|rusina|siemen/siemenet/siemeniä|hillo|marmeladi|hunaja 🍯|nutella|
    maapähkinävoi|leivinjauhe|ruokasooda|hiiva|tonnikala -|sardiini|oliivi 🫒|kurkkusalaatti|riisikakku 🍘|
-   elovena|felix|heinz`,
+   piparkakku/piparkakut/piparkakkuja 🍪|pipari 🍪|konvehti/konvehdit/konvehteja 🍫|suklaarasia 🍫|kinuski|kiisseli|laakerinlehti|karkkipussi 🍬|sipsipussi|pääsiäismuna 🥚|suklaamuna 🥚|mignon 🥚|mignonmuna 🥚|elovena|felix|heinz`,
   // 6 Juomat
   `juoma|mehu 🧃|limonadi 🥤|limu 🥤|limsa 🥤|limppari 🥤|limpska 🥤|limska 🥤|cola 🥤|kola 🥤|kokis 🥤|
    pepsi 🥤|fanta 🥤|sprite 🥤|jaffa 🥤|pommac 🥤|vesi/vedet/vettä|vichy|novelle|
    olut/oluet/oluita/olutta 🍺|kalja 🍺|bisse 🍺|koff 🍺|olvi 🍺|lapin_kulta 🍺|sandels 🍺|
-   heineken 🍺|siideri|lonkero|viini 🍷|kuohuviini 🍾|energiajuoma|red_bull|battery|smoothie|jääkahvi|jäätee`,
+   glögi|sima|viina 🥃|kossu 🥃|koskenkorva 🥃|gambina 🥃|vodka 🥃|viski 🥃|rommi 🥃|gini 🥃|likööri 🥃|konjakki 🥃|heineken 🍺|siideri|lonkero|viini 🍷|kuohuviini 🍾|energiajuoma|red_bull|battery|smoothie|jääkahvi|jäätee`,
   // 7 Kodintarvikkeet
   `paperi 🧻|leivinpaperi -|paperirulla 🧻|serla 🧻|lambi 🧻|nenäliina|lautasliina|servetti|pesuaine|
    pesujauhe|tiskiaine|huuhteluaine|roskapussi|pussi|pakastepussi|minigrip|folio|kelmu|
    kynttilä 🕯️|tuikku 🕯️|paristo 🔋|akku 🔋|lamppu 💡|polttimo 💡|tiskiharja|tiskirätti|rätti|
-   pesusieni 🧽|lautanen 🍽️|muki|kassi 🛍️|ilmapallo 🎈|kissanruoka|koiranruoka|
+   pesusieni 🧽|lautanen 🍽️|muki|kassi 🛍️|ilmapallo 🎈|kissanruoka 🐱|kissanherkku 🐱|kissanhiekka 🐱|koiranruoka 🐶|koiranherkku 🐶|koiranluu 🐶|lahjapaperi 🎁|kinkkupaperi -|
    hiekka|tulitikku|grillihiili|sytytysneste|luuta 🧹|ämpäri 🪣|pahvilaatikko|fairy|omo|ariel|finish`,
   // 8 Muut: tunnetut sanat, jotka eivät ole kaupan tuotteita (pysyvät listan lopussa)
-  `yksisarvinen 🦄|piaru/pieru 😶‍🌫️`,
+  `joulukalenteri 🎄|kalenteri 📅|kukka 💐|ruusu 🌹|tulppaani 🌷|joulutähti 💐|hyasintti 💐|rairuoho 🌱|lehti 📰|ristikko 📰|kirja 📖|sukkapuikko 🧶|lanka 🧶|televisio 📺|tietokone 💻|playstation 🎮|nintendo 🎮|xbox 🎮|pelikonsoli 🎮|joulukuusi 🎄|koriste 🎄|lahja 🎁|kortti|sädetikku 🎇|tähtisädetikku 🎇|ilotulite 🎆|raketti 🎆|tina|serpentiini 🎉|yksisarvinen 🦄|piaru/pieru 😶‍🌫️`,
   // 9 Hygienia ja kosmetiikka
   `saippua 🧼|shampoo 🧴|hoitoaine 🧴|suihkugeeli 🧴|voide/voiteet/voiteita 🧴|aurinkovoide/aurinkovoiteet 🧴|
    seerumi|kasvovesi|meikinpoistoaine|meikinpoistoliina|kasvonaamio|hammastahna|hammasharja 🪥|hammaslanka|
@@ -111,7 +117,7 @@ const SANASTO = [
    meikki 💄|kajaali 💄|ripsiväri 💄|luomiväri 💄|huulipuna 💄|huulikiilto 💄|huulirasva|poskipuna 💄|
    meikkivoide 💄|peitevoide 💄|puuteri 💄|aurinkopuuteri 💄|bronzer 💄|pohjustusvoide 💄|kulmakynä 💄|
    rajauskynä 💄|kulmaväri 💄|kynsilakka 💅|kynsilakanpoistoaine 💅|kynsiviila 💅|kynsisakset|pinsetti|
-   hiuslakka|hiusvaha|hiusgeeli|hiusväri|muotovaahto|hiuslenkki|hiuspinni|kampa|hiusharja|
+   hiuslakka|hiusvaha|hiusgeeli|hiusväri|muotovaahto|hiuslenkki|hiuspinni|kampa|hiusharja|harja|naamarasva 🧴|kasvorasva 🧴|käsirasva 🧴|
    pampers|libero|gillette 🪒|colgate|pepsodent|sensodyne|nivea|rexona|dove|lumene|maybelline|loreal|oreal`,
   // 10 Vaatteet ja kengät
   `lenkkari/lenkkarit/lenkkareita 👟|lenkkitossu 👟|tennari/tennarit/tennareita 👟|tossu 👟|kenkä 👞|saapas/saappaat/saappaita 👢|sandaali 👡|
@@ -229,7 +235,8 @@ export function tunnista(nimi) {
   let osuma = FRAASIT.find(f => lause.includes(' ' + f.perus + ' ')) || null;
   for (let i = sanat.length - 1; i >= 0 && !osuma; i--) osuma = tunnistaSana(sanat[i]);
 
-  let tulos = osuma ? { osasto: osuma.osasto, emoji: osuma.emoji } : { osasto: MUUT, emoji: '' };
+  let tulos = osuma ? { osasto: osuma.osasto, emoji: osuma.emoji }
+    : { osasto: MUUT, emoji: HUPI.get(avain.trim().replace(/\s+/g, ' ')) || '' };
   for (const [alku, osasto] of ETULIITTEET) {
     // Muut kuin ruoka (esim. pakastepussi) pysyvät omalla osastollaan.
     const eiRuokaa = [7, 9, 10].includes(tulos.osasto);
