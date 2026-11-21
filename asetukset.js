@@ -1,11 +1,11 @@
-// Laitekohtaiset asetukset. Tallentuvat vain tähän laitteeseen (localStorage),
-// eivät jaettuun listaan.
+// Listakohtaiset asetukset. Ne tallentuvat jaettuun listaan (kenttä "asetukset"),
+// joten muutos näkyy kaikilla saman listan käyttäjillä. Uusi lista alkaa oletusarvoilla.
 //
 // Uuden asetuksen lisääminen: lisää ASETUKSET-taulukkoon rivi.
-//   avain   – tallennusnimi
+//   avain   – tallennusnimi listassa
 //   nimi    – teksti asetusikkunassa
-//   oletus  – arvo, jos asetusta ei ole vielä muutettu
-//   kayta   – mitä tehdään, kun arvo on asetettu (kutsutaan myös käynnistyksessä)
+//   oletus  – arvo, jos asetusta ei ole listassa muutettu
+//   kayta   – mitä tehdään, kun arvo on voimassa (kutsutaan aina, kun lista päivittyy)
 
 const ASETUKSET = [
   {
@@ -16,27 +16,20 @@ const ASETUKSET = [
   },
 ];
 
-const TALLENNUS = 'kauppalista-asetukset';
+const arvo = (arvot, a) => (arvot && a.avain in arvot ? !!arvot[a.avain] : a.oletus);
 
-function lue() {
-  try { return JSON.parse(localStorage.getItem(TALLENNUS)) || {}; } catch { return {}; }
-}
-
-function tallenna(arvot) {
-  try { localStorage.setItem(TALLENNUS, JSON.stringify(arvot)); } catch {}
-}
-
-const arvo = (arvot, a) => (a.avain in arvot ? arvot[a.avain] : a.oletus);
-
-export function kaynnistaAsetukset() {
-  const arvot = lue();
+// Ottaa listan asetukset käyttöön tällä laitteella.
+export function kaytaAsetukset(arvot) {
   for (const a of ASETUKSET) a.kayta(arvo(arvot, a));
+}
 
+// lueArvot(): nykyisen listan asetukset. tallennaArvo(avain, arvo): tallentaa muutoksen listaan.
+export function kaynnistaAsetukset(lueArvot, tallennaArvo) {
   const ikkuna = document.getElementById('asetukset');
   const lista = document.getElementById('asetukset-lista');
 
   document.getElementById('asetukset-nappi').addEventListener('click', () => {
-    const nyt = lue();
+    const nyt = lueArvot();
     lista.textContent = '';
     for (const a of ASETUKSET) {
       const rivi = document.createElement('label');
@@ -45,12 +38,8 @@ export function kaynnistaAsetukset() {
       teksti.textContent = a.nimi;
       const valinta = document.createElement('input');
       valinta.type = 'checkbox';
-      valinta.checked = !!arvo(nyt, a);
-      valinta.addEventListener('change', () => {
-        const uudet = { ...lue(), [a.avain]: valinta.checked };
-        tallenna(uudet);
-        a.kayta(valinta.checked);
-      });
+      valinta.checked = arvo(nyt, a);
+      valinta.addEventListener('change', () => tallennaArvo(a.avain, valinta.checked));
       rivi.append(teksti, valinta);
       lista.append(rivi);
     }

@@ -4,9 +4,7 @@ import {
   doc, onSnapshot, setDoc, updateDoc, deleteDoc, deleteField, serverTimestamp,
 } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js';
 import { tunnista, OSASTOT, MUUT } from './osastot.js';
-import { kaynnistaAsetukset } from './asetukset.js';
-
-kaynnistaAsetukset();
+import { kaynnistaAsetukset, kaytaAsetukset } from './asetukset.js';
 
 // Firebase-verkkosovelluksen asetukset. Nämä eivät ole salaisuuksia:
 // tietoja suojaavat Firestoren säännöt (firestore.rules).
@@ -21,18 +19,28 @@ const db = initializeFirestore(initializeApp(FIREBASE), {
   localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
 });
 
-const VANHA_AVAIN = 'kauppalista';      // ennen jakamista käytetty paikallinen lista
-const VIIMEISIN = 'kauppalista-viimeisin';
+// Sovellus ei muista listoja: listaan pääsee vain sen linkillä.
+// Ainoa poikkeus: tässä välilehdessä juuri aloitettu, vielä tyhjä lista säilyy uudelleenlatauksessa
+// (sessionStorage, tyhjenee kun välilehti suljetaan).
+const LUONNOS = 'kauppalista-luonnos';
 
 const $ = id => document.getElementById(id);
 const lista = $('lista'), tyhja = $('tyhja'), poistaOtetut = $('poista-otetut');
-const lomake = $('lomake'), kentta = $('uusi'), jaa = $('jaa');
+const lomake = $('lomake'), kentta = $('uusi'), jaa = $('jaa'), asetuksetNappi = $('asetukset-nappi');
 const paattynyt = $('paattynyt'), uusiLista = $('uusi-lista');
+const aloitus = $('aloitus');
 const ladataan = $('ladataan'), offline = $('offline'), ilmoitus = $('ilmoitus');
 
-let listaId = null;      // null = uusi lista, jota ei ole vielä tallennettu
-let tuotteet = {};       // { tuoteId: { nimi, otettu, luotu } }
+let listaId = null;      // null = aloitussivu
+let luonnos = false;     // true = lista on vasta luotu eikä sitä ole vielä tallennettu
+let tuotteet = {};       // { tuoteId: { nimi, otettu, luotu, osasto? } }
+let listaAsetukset = {}; // listakohtaiset asetukset, esim. { piilotaEmojit: true }
 let lopeta = null;       // nykyisen kuuntelijan lopetus
+
+const lueLuonnos = () => { try { return sessionStorage.getItem(LUONNOS); } catch { return null; } };
+const asetaLuonnos = id => {
+  try { id ? sessionStorage.setItem(LUONNOS, id) : sessionStorage.removeItem(LUONNOS); } catch {}
+};
 
 // --- Tunnukset: kryptografisesti satunnaiset ---
 
@@ -50,28 +58,60 @@ const listaRef = () => doc(db, 'listat', listaId);
 // --- Tilat ---
 
 function nayta(tila) {
+  aloitus.hidden = tila !== 'aloitus';
   paattynyt.hidden = tila !== 'paattynyt';
   ladataan.hidden = tila !== 'ladataan';
   const auki = tila === 'lista';
   lista.hidden = !auki;
-  lomake.hidden = tila === 'paattynyt';
-  jaa.hidden = !(auki && listaId);
+  lomake.hidden = !(auki || tila === 'ladataan');
+  jaa.hidden = !(auki && !luonnos);   // tyhjää luonnosta ei voi jakaa (linkki näyttäisi päättyneen listan)
+  asetuksetNappi.hidden = !auki;
   if (!auki) { tyhja.hidden = true; poistaOtetut.hidden = true; }
 }
 
-function avaa(id) {
+// Kun näkymä vaihtuu toiseen listaan tai aloitussivulle, edellisen listan ikkunat suljetaan.
+function lopetaKuuntelu() {
   if (lopeta) { lopeta(); lopeta = null; }
+  for (const ikkuna of document.querySelectorAll('dialog[open]')) ikkuna.close();
+}
+
+// Lista korvaa nykyisen sivun historiassa, joten takaisin-nappi ei palaa aloitussivulle.
+function asetaOsoite(id) {
+  const uusi = id ? '#' + id : location.pathname;
+  if ((id || '') !== location.hash.slice(1)) history.replaceState(null, '', uusi);
+}
+
+function naytaAloitus() {
+  lopetaKuuntelu();
+  listaId = null;
+  luonnos = false;
+  tuotteet = {};
+  listaAsetukset = {};
+  kaytaAsetukset(listaAsetukset);
+  asetaOsoite(null);
+  nayta('aloitus');
+}
+
+// Uusi lista saa heti oman osoitteen. Se tallennetaan, kun siihen lisätään ensimmäinen tuote.
+function aloitaLuonnos(id = uusiListaId()) {
+  lopetaKuuntelu();
+  listaId = id;
+  luonnos = true;
+  tuotteet = {};
+  listaAsetukset = {};   // uusi lista alkaa aina oletusasetuksilla
+  kaytaAsetukset(listaAsetukset);
+  asetaLuonnos(id);
+  asetaOsoite(id);
+  nayta('lista');
+  piirra();
+}
+
+function avaa(id) {
+  lopetaKuuntelu();
   tuotteet = {};
   listaId = id;
-  if (!id) {
-    history.replaceState(null, '', location.pathname);
-    try { localStorage.removeItem(VIIMEISIN); } catch {}
-    nayta('lista');
-    piirra();
-    return;
-  }
-  if (location.hash.slice(1) !== id) history.replaceState(null, '', '#' + id);
-  try { localStorage.setItem(VIIMEISIN, id); } catch {}
+  luonnos = false;
+  asetaOsoite(id);
   nayta('ladataan');
 
   // includeMetadataChanges: saadaan tieto myös silloin, kun palvelin vahvistaa,
@@ -80,18 +120,23 @@ function avaa(id) {
     if (!snap.exists()) {
       // Välimuistissa ei ole listaa eikä palvelimelta saatu vastausta: odotetaan yhteyttä.
       if (snap.metadata.fromCache && !snap.metadata.hasPendingWrites) return nayta('ladataan');
+      // Tällä laitteella aloitettu, vielä tyhjä lista (esim. sivu ladattiin uudelleen).
+      if (lueLuonnos() === id) return aloitaLuonnos(id);
       return paattyi();
     }
-    tuotteet = snap.data().tuotteet || {};
+    const data = snap.data();
+    tuotteet = data.tuotteet || {};
     if (!Object.keys(tuotteet).length) return paattyi();
+    listaAsetukset = data.asetukset || {};
+    kaytaAsetukset(listaAsetukset);
     nayta('lista');
     piirra();
   }, virhe);
 }
 
 function paattyi() {
-  if (lopeta) { lopeta(); lopeta = null; }
-  try { localStorage.removeItem(VIIMEISIN); } catch {}
+  lopetaKuuntelu();
+  kaytaAsetukset({});
   nayta('paattynyt');
 }
 
@@ -222,29 +267,47 @@ function poistaTuotteet(idt) {
   muokkaa(Object.fromEntries(idt.map(tid => ['tuotteet.' + tid, deleteField()])));
 }
 
-function luoLista(tuotteetAlussa) {
-  const id = uusiListaId();
-  listaId = id;
-  setDoc(listaRef(), { tuotteet: tuotteetAlussa, muokattu: serverTimestamp() }).catch(virhe);
-  avaa(id);
+// Luonnos tallennetaan, kun siihen lisätään ensimmäinen tuote.
+function tallennaLuonnos(ensimmainen) {
+  const uusi = { tuotteet: ensimmainen, muokattu: serverTimestamp() };
+  if (Object.keys(listaAsetukset).length) uusi.asetukset = listaAsetukset;
+  setDoc(listaRef(), uusi).catch(virhe);
+  asetaLuonnos(null);
+  avaa(listaId);
 }
 
 lomake.addEventListener('submit', e => {
   e.preventDefault();
+  if (!listaId) return;
   const nimi = kentta.value.trim().slice(0, 100);
   if (!nimi) return;
   kentta.value = '';
   const tid = uusiTuoteId();
   const tuote = { nimi, otettu: false, luotu: Date.now() };
-  if (listaId) muokkaa({ ['tuotteet.' + tid]: tuote });
-  else luoLista({ [tid]: tuote });
+  if (luonnos) tallennaLuonnos({ [tid]: tuote });
+  else muokkaa({ ['tuotteet.' + tid]: tuote });
 });
 
 poistaOtetut.addEventListener('click', () => {
   poistaTuotteet(Object.keys(tuotteet).filter(tid => tuotteet[tid].otettu));
 });
 
-uusiLista.addEventListener('click', () => avaa(null));
+$('aloita-uusi').addEventListener('click', () => aloitaLuonnos());
+uusiLista.addEventListener('click', () => aloitaLuonnos());
+
+// --- Listakohtaiset asetukset ---
+
+kaynnistaAsetukset(
+  () => listaAsetukset,
+  (avain, arvo) => {
+    if (luonnos) {
+      listaAsetukset = { ...listaAsetukset, [avain]: arvo };
+      kaytaAsetukset(listaAsetukset);
+    } else {
+      muokkaa({ ['asetukset.' + avain]: arvo });
+    }
+  },
+);
 
 // --- Jakaminen ---
 
@@ -280,31 +343,19 @@ paivitaYhteys();
 
 // --- Käynnistys ---
 
-addEventListener('hashchange', () => {
-  const id = location.hash.slice(1);
-  if (id !== (listaId || '')) avaa(kelpaaId(id) ? id : null);
-});
-
+// Perusosoite näyttää aina aloitussivun, linkki (#tunnus) avaa listan suoraan.
 function kaynnista() {
-  const linkista = location.hash.slice(1);
-  if (linkista) return kelpaaId(linkista) ? avaa(linkista) : paattyi();
+  const id = location.hash.slice(1);
+  if (!id) return naytaAloitus();
+  if (!kelpaaId(id)) return paattyi();
+  if (id !== listaId) avaa(id);
+}
 
-  let viimeisin = null;
-  try { viimeisin = localStorage.getItem(VIIMEISIN); } catch {}
-  if (viimeisin && kelpaaId(viimeisin)) return avaa(viimeisin);
+addEventListener('hashchange', kaynnista);
 
-  // Siirretään aiempi paikallinen lista jaettavaksi listaksi.
-  let vanhat = [];
-  try { vanhat = JSON.parse(localStorage.getItem(VANHA_AVAIN)) || []; } catch {}
-  try { localStorage.removeItem(VANHA_AVAIN); } catch {}
-  const siirrettavat = Array.isArray(vanhat) ? vanhat.filter(t => t && typeof t.nimi === 'string') : [];
-  if (siirrettavat.length) {
-    const alku = Date.now();
-    luoLista(Object.fromEntries(siirrettavat.map((t, i) =>
-      [uusiTuoteId(), { nimi: t.nimi.slice(0, 100), otettu: !!t.otettu, luotu: alku + i }])));
-    return;
-  }
-  avaa(null);
+// Aiempien versioiden laitteelle tallentamat tiedot (viimeisin lista, asetukset) poistetaan.
+for (const vanha of ['kauppalista-viimeisin', 'kauppalista-asetukset', 'kauppalista-luonnos']) {
+  try { localStorage.removeItem(vanha); } catch {}
 }
 
 kaynnista();

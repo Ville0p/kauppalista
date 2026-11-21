@@ -67,6 +67,25 @@ h1 { margin: 0; font-size: 24px; }
 #jaa:active { filter: brightness(0.92); }
 
 .painikkeet { display: flex; align-items: center; gap: 6px; }
+
+/* Aloitussivu */
+#aloitus {
+  display: grid;
+  gap: 14px;
+  padding: 48px 24px;
+  text-align: center;
+}
+#aloitus p { margin: 0 0 12px; color: var(--harmaa); }
+#aloita-uusi {
+  min-height: 64px;
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--oranssi);
+  border: 0;
+  border-radius: 14px;
+}
+#aloita-uusi:active { filter: brightness(0.92); }
 #asetukset-nappi {
   display: grid;
   place-items: center;
