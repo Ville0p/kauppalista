@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="fi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Kauppalista</title>
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#2e7d32">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon-192.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Kauppalista">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header><h1>Kauppalista</h1></header>
+
+  <main>
+    <ul id="lista"></ul>
+    <p id="tyhja">Lista on tyhjä. Lisää tuote alta.</p>
+    <button id="poista-otetut" type="button" hidden>Poista otetut</button>
+  </main>
+
+  <form id="lomake" autocomplete="off">
+    <input id="uusi" type="text" placeholder="Uusi tuote" aria-label="Uusi tuote" enterkeyhint="done">
+    <button type="submit">Lisää</button>
+  </form>
+
+  <script src="app.js"></script>
+</body>
+</html>

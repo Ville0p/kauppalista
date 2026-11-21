@@ -1,0 +1,140 @@
+:root {
+  --vihrea: #2e7d32;
+  --punainen: #c62828;
+  --teksti: #1b1b1b;
+  --harmaa: #6b6b6b;
+  --raja: #e0e0e0;
+  --tausta: #ffffff;
+  --pohja: #f3f3f3;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 20px;
+  color: var(--teksti);
+  background: var(--tausta);
+  -webkit-tap-highlight-color: transparent;
+}
+
+header {
+  background: var(--vihrea);
+  color: #fff;
+  padding: calc(12px + env(safe-area-inset-top)) 16px 12px;
+}
+h1 { margin: 0; font-size: 24px; }
+
+main { flex: 1; padding-bottom: 8px; }
+
+ul { list-style: none; margin: 0; padding: 0; }
+
+li {
+  display: flex;
+  border-bottom: 1px solid var(--raja);
+}
+
+button { font: inherit; cursor: pointer; }
+
+.nimi {
+  flex: 1;
+  min-width: 0;
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  text-align: left;
+  color: inherit;
+  background: none;
+  border: 0;
+  overflow-wrap: anywhere;
+}
+.nimi::before {
+  content: "";
+  flex: none;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 3px solid var(--vihrea);
+  border-radius: 8px;
+  color: #fff;
+  font-weight: 700;
+  font-size: 20px;
+}
+li.otettu .nimi { color: var(--harmaa); text-decoration: line-through; }
+li.otettu .nimi::before { content: "✓"; background: var(--vihrea); }
+
+.poista {
+  flex: none;
+  width: 64px;
+  font-size: 26px;
+  color: var(--harmaa);
+  background: none;
+  border: 0;
+}
+
+.nimi:active, .poista:active { background: var(--pohja); }
+
+#tyhja {
+  margin: 0;
+  padding: 40px 16px;
+  text-align: center;
+  color: var(--harmaa);
+}
+
+#poista-otetut {
+  display: block;
+  width: calc(100% - 32px);
+  min-height: 56px;
+  margin: 20px 16px;
+  font-weight: 600;
+  color: var(--punainen);
+  background: #fff;
+  border: 2px solid var(--punainen);
+  border-radius: 12px;
+}
+#poista-otetut:active { background: #fdecec; }
+
+form {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  background: var(--pohja);
+  border-top: 1px solid var(--raja);
+}
+
+input {
+  flex: 1;
+  min-width: 0;
+  min-height: 56px;
+  padding: 0 14px;
+  font: inherit;
+  color: inherit;
+  background: #fff;
+  border: 2px solid var(--raja);
+  border-radius: 12px;
+}
+input:focus { outline: none; border-color: var(--vihrea); }
+
+form button {
+  min-height: 56px;
+  padding: 0 22px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--vihrea);
+  border: 0;
+  border-radius: 12px;
+}
+form button:active { filter: brightness(0.9); }
