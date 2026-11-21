@@ -10,7 +10,7 @@ import {
 
 // Firebase-verkkosovelluksen asetukset. Nämä eivät ole salaisuuksia:
 // tietoja suojaavat Firestoren säännöt (firestore.rules).
-const FIREBASE = {
+export const FIREBASE = {
   apiKey: 'AIzaSyDHgC_SQImzcgEHFOSLMbVBHQsKCvw6gys',
   authDomain: 'kauppalista-6669.firebaseapp.com',
   projectId: 'kauppalista-6669',

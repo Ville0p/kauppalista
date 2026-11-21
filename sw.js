@@ -12,6 +12,7 @@ const TIEDOSTOT = [
   'osastot.js',
   'asetukset.js',
   'kopiot.js',
+  'siivous.js',
   'fonts/carlito-400.woff2',
   'fonts/carlito-700.woff2',
   'manifest.json',

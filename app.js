@@ -1,6 +1,7 @@
 import {
-  doc, onSnapshot, setDoc, updateDoc, deleteDoc, deleteField, serverTimestamp,
+  doc, onSnapshot, writeBatch, deleteField, serverTimestamp,
 } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js';
+import { kuukausisiivous } from './siivous.js';
 import { tunnista, OSASTOT, MUUT } from './osastot.js';
 import { kaynnistaAsetukset, kaytaAsetukset } from './asetukset.js';
 import { tietokanta, poistaKopio, kunListaPaattyy, siivoaVanhat, kelpaaId } from './kopiot.js';
@@ -254,15 +255,29 @@ valinta.addEventListener('click', e => { if (e.target === valinta) valinta.close
 // Kirjoituksia ei odoteta: Firestore näyttää muutoksen heti ja lähettää sen,
 // kun yhteys toimii (myös sovelluksen uudelleenkäynnistyksen jälkeen).
 
+// Jokainen listan muutos päivittää samalla kirjoituksella myös listan merkinnän
+// vanhenemisluettelossa (vain muokkausaika, ei sisältöä). Kuukausisiivous löytää sen avulla
+// vanhentuneet listat (ks. siivous.js ja firestore.rules).
+const merkintaRef = () => doc(tietokanta(listaId), 'vanhenemiset', listaId);
+
+function kirjoita(muutos) {
+  const era = writeBatch(tietokanta(listaId));
+  muutos(era);
+  return era.commit();
+}
+
 function muokkaa(kentat) {
-  updateDoc(listaRef(), { ...kentat, muokattu: serverTimestamp() }).catch(virhe);
+  kirjoita(era => {
+    era.update(listaRef(), { ...kentat, muokattu: serverTimestamp() });
+    era.set(merkintaRef(), { muokattu: serverTimestamp() });
+  }).catch(virhe);
 }
 
 function poistaTuotteet(idt) {
   const jaljelle = Object.keys(tuotteet).filter(tid => !idt.includes(tid));
   if (!jaljelle.length) {
-    // Viimeinen tuote poistettiin: lista päättyy.
-    deleteDoc(listaRef()).catch(virhe);
+    // Viimeinen tuote poistettiin: lista ja sen merkintä poistetaan.
+    kirjoita(era => { era.delete(listaRef()); era.delete(merkintaRef()); }).catch(virhe);
     return paattyi();
   }
   muokkaa(Object.fromEntries(idt.map(tid => ['tuotteet.' + tid, deleteField()])));
@@ -274,7 +289,10 @@ function tallennaLuonnos(ensimmainen) {
   if (Object.keys(listaAsetukset).length) uusi.asetukset = listaAsetukset;
   const id = listaId;
   tallentamatta = id;
-  setDoc(listaRef(), uusi)
+  kirjoita(era => {
+    era.set(listaRef(), uusi);
+    era.set(merkintaRef(), { muokattu: serverTimestamp() });
+  })
     .then(() => { if (tallentamatta === id) tallentamatta = null; })
     .catch(e => { if (tallentamatta === id) tallentamatta = null; virhe(e); });
   asetaLuonnos(null);
@@ -365,6 +383,8 @@ for (const vanha of ['kauppalista-viimeisin', 'kauppalista-asetukset', 'kauppali
 
 kaynnista();
 setTimeout(() => siivoaVanhat(() => listaId), 3000);
+// Kuukausisiivous taustalla, kun sovellus on jo käytössä. Epäonnistuessa seuraava avaus yrittää uudelleen.
+setTimeout(() => kuukausisiivous().catch(() => {}), 5000);
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {});

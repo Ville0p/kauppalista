@@ -4,13 +4,28 @@ rules_version = '2';
 // - Listan voi avata vain, jos tietää sen 128-bittisen satunnaisen tunnuksen.
 // - Listoja ei voi luetella eikä selata.
 // - Tyhjä tai yli 7 päivää muokkaamatta ollut lista on päättynyt: sitä ei voi lukea eikä muokata.
+// - Vanhenemisluettelo (vanhenemiset/{tunnus}) sisältää vain listan muokkausajan. Siitä voi hakea
+//   vain vanhentuneiden listojen tunnukset, jotta sovellus voi poistaa ne kuukausisiivouksessa.
+// Kaikki ajat tarkistetaan palvelimen kellosta (request.time).
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // Lista päättyy, kun sitä ei ole muokattu tähän mennessä.
+    function vanhenemisraja() {
+      return request.time - duration.value(7, 'd');
+    }
+    function listaPolku(id) {
+      return /databases/$(database)/documents/listat/$(id);
+    }
+    function merkintaPolku(id) {
+      return /databases/$(database)/documents/vanhenemiset/$(id);
+    }
+
     match /listat/{id} {
 
       function voimassa() {
         return resource.data.tuotteet.size() > 0
-          && resource.data.muokattu > request.time - duration.value(7, 'd');
+          && resource.data.muokattu > vanhenemisraja();
       }
 
       function kelvollinen() {
@@ -22,14 +37,47 @@ service cloud.firestore {
           && d.tuotteet.size() <= 300;
       }
 
+      // Jokainen listan muutos kirjoittaa samalla kirjoituksella myös vanhenemisluettelon merkinnän.
+      function merkintaMukana() {
+        return getAfter(merkintaPolku(id)).data.muokattu == request.time;
+      }
+
       // Olemattoman listan lukeminen kertoo vain, ettei listaa ole (sovellus näyttää "päättynyt").
       allow get: if resource == null || voimassa();
       allow list: if false;
       allow create: if id.matches('^[A-Za-z0-9_-]{22}$')
         && kelvollinen()
-        && request.resource.data.tuotteet.size() > 0;
-      allow update: if voimassa() && kelvollinen();
-      allow delete: if voimassa();
+        && request.resource.data.tuotteet.size() > 0
+        && merkintaMukana();
+      allow update: if voimassa() && kelvollinen() && merkintaMukana();
+      // Voimassa olevan listan voi poistaa sen tunnuksen tietävä, vanhentuneen kuka tahansa
+      // (kuukausisiivous). Merkintä poistetaan samalla kirjoituksella.
+      // Olemattoman listan poisto sallitaan, jotta siivous voi poistaa merkinnän, jonka lista puuttuu.
+      allow delete: if (resource == null || voimassa() || resource.data.muokattu <= vanhenemisraja())
+        && !existsAfter(merkintaPolku(id));
+    }
+
+    match /vanhenemiset/{id} {
+      // Yksittäistä merkintää ei voi lukea (ei voi kokeilla, onko lista olemassa).
+      allow get: if false;
+      // Haku palauttaa vain vanhentuneet merkinnät, enintään 100 kerrallaan.
+      allow list: if request.query.limit <= 100
+        && resource.data.muokattu <= vanhenemisraja();
+      // Merkinnän voi kirjoittaa vain yhdessä saman listan muutoksen kanssa.
+      allow create, update: if request.resource.data.keys().hasOnly(['muokattu'])
+        && request.resource.data.muokattu == request.time
+        && getAfter(listaPolku(id)).data.muokattu == request.time;
+      // Merkinnän voi poistaa vain, kun listaa ei ole (poistetaan samalla kirjoituksella).
+      allow delete: if !existsAfter(listaPolku(id));
+    }
+
+    // Kuukausisiivouksen merkintä, esim. { kuukausi: "11.2026" }. Kuukausi on palvelimen kellon
+    // mukaan UTC-aikaa, eikä muuta kuin kuluvaa kuukautta voi merkitä tehdyksi.
+    match /siivous/tila {
+      allow get: if true;
+      allow create, update: if request.resource.data.keys().hasOnly(['kuukausi'])
+        && request.resource.data.kuukausi
+          == string(request.time.month()) + '.' + string(request.time.year());
     }
 
     match /{document=**} {
