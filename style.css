@@ -1,5 +1,19 @@
+/* Carlito (Calibrin kanssa mitoiltaan yhteensopiva, SIL OFL -lisenssi, ks. fonts/OFL.txt) */
+@font-face {
+  font-family: 'Carlito';
+  font-weight: 400;
+  font-display: swap;
+  src: url(fonts/carlito-400.woff2) format('woff2');
+}
+@font-face {
+  font-family: 'Carlito';
+  font-weight: 700;
+  font-display: swap;
+  src: url(fonts/carlito-700.woff2) format('woff2');
+}
+
 :root {
-  --vihrea: #2e7d32;
+  --oranssi: #b5541c;   /* valkoisen tekstin kontrasti 4.9:1 */
   --punainen: #c62828;
   --teksti: #1b1b1b;
   --harmaa: #6b6b6b;
@@ -19,7 +33,7 @@ body {
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: Carlito, Calibri, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   font-size: 20px;
   color: var(--teksti);
   background: var(--tausta);
@@ -31,7 +45,7 @@ header {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  background: var(--vihrea);
+  background: var(--oranssi);
   color: #fff;
   padding: calc(8px + env(safe-area-inset-top)) 12px 8px 16px;
   min-height: 64px;
@@ -45,7 +59,7 @@ h1 { margin: 0; font-size: 24px; }
   min-height: 48px;
   padding: 0 18px;
   font-weight: 700;
-  color: var(--vihrea);
+  color: var(--oranssi);
   background: #fff;
   border: 0;
   border-radius: 24px;
@@ -74,7 +88,7 @@ h1 { margin: 0; font-size: 24px; }
   padding: 0 28px;
   font-weight: 700;
   color: #fff;
-  background: var(--vihrea);
+  background: var(--oranssi);
   border: 0;
   border-radius: 12px;
 }
@@ -123,14 +137,51 @@ button { font: inherit; cursor: pointer; }
   height: 32px;
   display: grid;
   place-items: center;
-  border: 3px solid var(--vihrea);
+  border: 3px solid var(--oranssi);
   border-radius: 8px;
   color: #fff;
   font-weight: 700;
   font-size: 20px;
 }
 li.otettu .nimi { color: var(--harmaa); text-decoration: line-through; }
-li.otettu .nimi::before { content: "✓"; background: var(--vihrea); }
+li.otettu .nimi::before { content: "✓"; background: var(--oranssi); }
+
+/* Pitkä painallus avaa osaston valinnan: estetään tekstin valinta ja iOS:n ponnahdusvalikko. */
+.nimi {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+.emoji { flex: none; margin-right: -4px; font-size: 22px; line-height: 1; }
+li.otettu .emoji { opacity: 0.5; }
+
+#osastovalinta {
+  width: min(92vw, 420px);
+  max-height: 90dvh;
+  padding: 20px 16px 16px;
+  border: 0;
+  border-radius: 16px;
+  font: inherit;
+  color: var(--teksti);
+  background: var(--tausta);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+#osastovalinta::backdrop { background: rgba(0, 0, 0, 0.45); }
+#osastovalinta h2 { margin: 0 0 12px; font-size: 20px; }
+#osastovalinta-nimi { display: block; font-weight: 400; color: var(--harmaa); overflow-wrap: anywhere; }
+#osastovalinta-napit { display: grid; gap: 8px; }
+#osastovalinta-napit button,
+#osastovalinta-peru {
+  min-height: 52px;
+  padding: 0 16px;
+  text-align: left;
+  color: var(--teksti);
+  background: var(--pohja);
+  border: 2px solid transparent;
+  border-radius: 12px;
+}
+#osastovalinta-napit button.valittu { border-color: var(--oranssi); font-weight: 700; }
+#osastovalinta-peru { width: 100%; margin-top: 12px; text-align: center; background: none; color: var(--harmaa); }
 
 .poista {
   flex: none;
@@ -177,14 +228,14 @@ input {
   border: 2px solid var(--raja);
   border-radius: 12px;
 }
-input:focus { outline: none; border-color: var(--vihrea); }
+input:focus { outline: none; border-color: var(--oranssi); }
 
 form button {
   min-height: 56px;
   padding: 0 22px;
   font-weight: 700;
   color: #fff;
-  background: var(--vihrea);
+  background: var(--oranssi);
   border: 0;
   border-radius: 12px;
 }

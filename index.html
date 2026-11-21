@@ -5,7 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Kauppalista</title>
   <meta name="color-scheme" content="light">
-  <meta name="theme-color" content="#2e7d32">
+  <meta name="theme-color" content="#b5541c">
+  <link rel="preload" href="fonts/carlito-400.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/carlito-700.woff2" as="font" type="font/woff2" crossorigin>
   <meta name="referrer" content="no-referrer">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icon-192.png">
@@ -45,6 +47,12 @@
   </form>
 
   <div id="ilmoitus" role="status" hidden></div>
+
+  <dialog id="osastovalinta" aria-labelledby="osastovalinta-otsikko">
+    <h2 id="osastovalinta-otsikko">Valitse osasto<span id="osastovalinta-nimi"></span></h2>
+    <div id="osastovalinta-napit"></div>
+    <button id="osastovalinta-peru" type="button">Peruuta</button>
+  </dialog>
 
   <script type="module" src="app.js"></script>
 </body>

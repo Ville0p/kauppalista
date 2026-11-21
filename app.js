@@ -3,6 +3,7 @@ import {
   initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
   doc, onSnapshot, setDoc, updateDoc, deleteDoc, deleteField, serverTimestamp,
 } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js';
+import { tunnista, OSASTOT, MUUT } from './osastot.js';
 
 // Firebase-verkkosovelluksen asetukset. Nämä eivät ole salaisuuksia:
 // tietoja suojaavat Firestoren säännöt (firestore.rules).
@@ -99,11 +100,18 @@ function virhe(e) {
 
 // --- Piirtäminen ---
 
+// Itse valittu osasto (tallennettu listaan) voittaa automaattisen tunnistuksen.
+function osastoOf(t) {
+  return Number.isInteger(t.osasto) && t.osasto >= 0 && t.osasto <= MUUT ? t.osasto : tunnista(t.nimi).osasto;
+}
+
 function piirra() {
   lista.textContent = '';
+  // Kaupan osastojärjestys, saman osaston sisällä lisäysjärjestys.
   const kaikki = Object.entries(tuotteet)
     .filter(([, t]) => t && typeof t.nimi === 'string')
-    .sort(([, a], [, b]) => (a.luotu || 0) - (b.luotu || 0));
+    .map(([tid, t]) => [tid, t, osastoOf(t)])
+    .sort(([, a, oa], [, b, ob]) => oa - ob || (a.luotu || 0) - (b.luotu || 0));
   const jarjestys = [...kaikki.filter(([, t]) => !t.otettu), ...kaikki.filter(([, t]) => t.otettu)];
 
   for (const [tid, t] of jarjestys) {
@@ -113,9 +121,21 @@ function piirra() {
     const nimi = document.createElement('button');
     nimi.type = 'button';
     nimi.className = 'nimi';
-    nimi.textContent = t.nimi;
+    const emoji = tunnista(t.nimi).emoji;
+    if (emoji) {
+      const e = document.createElement('span');
+      e.className = 'emoji';
+      e.setAttribute('aria-hidden', 'true');
+      e.textContent = emoji;
+      nimi.append(e);
+    }
+    nimi.append(t.nimi);
     nimi.setAttribute('aria-pressed', t.otettu ? 'true' : 'false');
-    nimi.addEventListener('click', () => muokkaa({ ['tuotteet.' + tid]: { ...t, otettu: !t.otettu } }));
+    pitkaPainallus(nimi, () => valitseOsasto(tid, t));
+    nimi.addEventListener('click', () => {
+      if (nimi.dataset.pitka) { delete nimi.dataset.pitka; return; }
+      muokkaa({ ['tuotteet.' + tid]: { ...t, otettu: !t.otettu } });
+    });
 
     const poista = document.createElement('button');
     poista.type = 'button';
@@ -131,6 +151,55 @@ function piirra() {
   tyhja.hidden = kaikki.length > 0;
   poistaOtetut.hidden = !kaikki.some(([, t]) => t.otettu);
 }
+
+// --- Osaston valinta pitkällä painalluksella ---
+
+function pitkaPainallus(el, toiminto) {
+  let ajastin = null, x = 0, y = 0;
+  const peru = () => { clearTimeout(ajastin); ajastin = null; };
+  el.addEventListener('pointerdown', e => {
+    x = e.clientX; y = e.clientY;
+    delete el.dataset.pitka;
+    peru();
+    ajastin = setTimeout(() => {
+      ajastin = null;
+      el.dataset.pitka = '1';   // estää samaa painallusta merkitsemästä tuotetta otetuksi
+      toiminto();
+    }, 500);
+  });
+  el.addEventListener('pointermove', e => {
+    if (Math.abs(e.clientX - x) > 10 || Math.abs(e.clientY - y) > 10) peru();
+  });
+  el.addEventListener('pointerup', peru);
+  el.addEventListener('pointercancel', peru);
+  el.addEventListener('pointerleave', peru);
+  el.addEventListener('contextmenu', e => e.preventDefault());
+}
+
+const valinta = $('osastovalinta');
+const valintaOtsikko = $('osastovalinta-nimi');
+const valintaNapit = $('osastovalinta-napit');
+
+function valitseOsasto(tid, t) {
+  valintaOtsikko.textContent = t.nimi;
+  valintaNapit.textContent = '';
+  const nykyinen = osastoOf(t);
+  OSASTOT.forEach((nimi, i) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = nimi;
+    if (i === nykyinen) b.className = 'valittu';
+    b.addEventListener('click', () => {
+      valinta.close();
+      if (i !== nykyinen) muokkaa({ ['tuotteet.' + tid]: { ...t, osasto: i } });
+    });
+    valintaNapit.append(b);
+  });
+  valinta.showModal();
+}
+
+$('osastovalinta-peru').addEventListener('click', () => valinta.close());
+valinta.addEventListener('click', e => { if (e.target === valinta) valinta.close(); });
 
 // --- Muutokset ---
 // Kirjoituksia ei odoteta: Firestore näyttää muutoksen heti ja lähettää sen,
