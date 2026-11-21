@@ -36,6 +36,7 @@ let luonnos = false;     // true = lista on vasta luotu eikä sitä ole vielä t
 let tuotteet = {};       // { tuoteId: { nimi, otettu, luotu, osasto? } }
 let listaAsetukset = {}; // listakohtaiset asetukset, esim. { piilotaEmojit: true }
 let lopeta = null;       // nykyisen kuuntelijan lopetus
+let tallentamatta = null; // tässä välilehdessä luotu lista, jonka tallennus odottaa palvelimen vahvistusta
 
 const lueLuonnos = () => { try { return sessionStorage.getItem(LUONNOS); } catch { return null; } };
 const asetaLuonnos = id => {
@@ -118,6 +119,10 @@ function avaa(id) {
   // ettei listaa ole (välimuistin tieto ei muutu, vain fromCache).
   lopeta = onSnapshot(listaRef(), { includeMetadataChanges: true }, snap => {
     if (!snap.exists()) {
+      // Tässä välilehdessä juuri luotu lista, jonka tallennusta palvelin ei ole vielä vahvistanut.
+      // Palvelimen vastaus "ei ole" voi ehtiä ennen tallennusta (varsinkin kun sovellus on auki
+      // useammassa välilehdessä), joten se ei vielä tarkoita, että lista on päättynyt.
+      if (tallentamatta === id) return;
       // Välimuistissa ei ole listaa eikä palvelimelta saatu vastausta: odotetaan yhteyttä.
       if (snap.metadata.fromCache && !snap.metadata.hasPendingWrites) return nayta('ladataan');
       // Tällä laitteella aloitettu, vielä tyhjä lista (esim. sivu ladattiin uudelleen).
@@ -271,7 +276,11 @@ function poistaTuotteet(idt) {
 function tallennaLuonnos(ensimmainen) {
   const uusi = { tuotteet: ensimmainen, muokattu: serverTimestamp() };
   if (Object.keys(listaAsetukset).length) uusi.asetukset = listaAsetukset;
-  setDoc(listaRef(), uusi).catch(virhe);
+  const id = listaId;
+  tallentamatta = id;
+  setDoc(listaRef(), uusi)
+    .then(() => { if (tallentamatta === id) tallentamatta = null; })
+    .catch(e => { if (tallentamatta === id) tallentamatta = null; virhe(e); });
   asetaLuonnos(null);
   avaa(listaId);
 }
