@@ -1,8 +1,12 @@
 // Tuotteen osasto ja emoji tuotteen nimestä. Ei verkkoa eikä tekoälyä: pelkkä sanasto.
 //
-// Tunnistus: nimen jokaisesta sanasta etsitään sanaston sanoja. Suomen yhdyssanoissa
-// pääsana on lopussa (kevyt|MAITO, maito|SUKLAA), joten osuma sanan lopussa voittaa
-// osuman sanan alussa tai keskellä. Tasapelissä viimeinen sana ja pidempi osuma voittavat.
+// Tunnistus: suomen yhdyssanassa tuotteen kertoo viimeinen osa (kevyt|MAITO, sipuli|JAUHE),
+// joten sanaa verrataan vain sanaston sanoihin sen lopussa. Jos loppuosaa ei tunneta, tuote on
+// tuntematon (esim. yksisarvinen, kalakukko ilman omaa sanaston sanaa). Taivutusmuodot ja monikot
+// (kiivit, kiivejä, mansikoita, leivät) muodostetaan perusmuodosta automaattisesti.
+// Monisanaisesta nimestä (esim. "maito rasvaton") käytetään viimeistä tunnettua sanaa.
+
+import { CLDR } from './emojit.js';
 
 export const OSASTOT = [
   'Hedelmät ja vihannekset',
@@ -17,82 +21,169 @@ export const OSASTOT = [
 ];
 export const MUUT = OSASTOT.length - 1;
 
-// Sanaston rivit: 'sana' tai 'sana emoji'. Sanat ovat perusmuotoja tai vartaloita
-// (esim. 'tomaat' tunnistaa sekä tomaatin että tomaatit).
+// Sanaston rivit: 'perusmuoto' tai 'perusmuoto emoji'. Epäsäännölliset muodot vinoviivalla:
+// 'olut/oluet/oluita/olutta'. Monisanainen nimi välilyönnillä: 'red_bull' (alaviiva = välilyönti).
+// Emoji '-' = ei emojia (estää CLDR:n emojin). Ilman emojia sana saa CLDR:n emojin, jos sellainen on.
 const SANASTO = [
   // 0 Hedelmät ja vihannekset
-  `banaan 🍌|omena 🍎|omeno 🍎|päärynä 🍐|päärynö 🍐|appelsiin 🍊|mandariin 🍊|klementiin 🍊|sitruun 🍋|lime|limet|
-   viinirypäle 🍇|viinirypäl 🍇|rypäle 🍇|rypäl 🍇|mango 🥭|ananas 🍍|kiwi 🥝|meloni 🍈|vesimeloni 🍉|hunajameloni 🍈|
-   mansikka 🍓|mansikat 🍓|mansiko 🍓|mustikka 🫐|mustikat 🫐|mustiko 🫐|vadelma|vadelmi|puolukka|puolukat|karpalo|
-   lakka|herukka|herukat|kirsikka 🍒|kirsikat 🍒|kirsiko 🍒|persikka 🍑|persikat 🍑|persiko 🍑|nektariini|luumu|granaattiomena|greippi|greipi|taateli|viikuna|kookos 🥥|avokado 🥑|
-   peruna 🥔|perunoi 🥔|porkkana 🥕|porkkano 🥕|sipuli 🧅|sipulei 🧅|valkosipuli 🧄|punasipuli 🧅|kevätsipuli|ruohosipuli|
-   kurkku 🥒|kurkut 🥒|kurkku|tomaatti 🍅|tomaat 🍅|paprika 🫑|paprikoi 🫑|salaatti 🥬|salaat 🥬|jäävuorisalaatti 🥬|rucola|
-   kaali|kerä|kukkakaali|parsakaali 🥦|brokkoli 🥦|ruusukaali|lehtikaali|kesäkurpitsa|kurpitsa|munakoiso 🍆|
-   sieni 🍄|sienet 🍄|herkkusieni 🍄|kantarelli|pinaatti|retiisi|lanttu|nauris|punajuuri|punajuur|selleri|purjo|
-   inkivääri|chili 🌶️|basilika|persilja|tilli|korianteri|minttu|maissintähkä 🌽|parsa|raparperi|idut|versot|
-   hedelmä|hedelm|vihannes|vihannek|marja|marjat|yrtti|yrtit`,
+  `banaani 🍌|omena 🍎|päärynä 🍐|appelsiini 🍊|mandariini 🍊|klementiini 🍊|satsuma 🍊|sitruuna 🍋|lime|
+   greippi|pomelo|kiivi 🥝|mango 🥭|ananas/ananakset/ananaksia 🍍|meloni 🍈|vesimeloni 🍉|hunajameloni 🍈|
+   viinirypäle/viinirypäleet/viinirypäleitä 🍇|rypäle/rypäleet/rypäleitä 🍇|mansikka 🍓|mustikka 🫐|vadelma|
+   puolukka|karpalo|lakka|hilla|herukka|karviainen|tyrni|kirsikka 🍒|persikka 🍑|nektariini 🍑|aprikoosi|
+   luumu|granaattiomena|taateli|viikuna|kookos/kookokset/kookoksia 🥥|avokado 🥑|papaija|passionhedelmä|
+   physalis|litsi|kaki|marja|hedelmä|hedelmäsalaatti -|
+   peruna 🥔|bataatti 🍠|porkkana 🥕|porkkanaraaste 🥕|sipuli 🧅|kevätsipuli|ruohosipuli|valkosipuli 🧄|purjo|kurkku 🥒|
+   tomaatti 🍅|paprika 🫑|chili 🌶️|jalapeno 🌶️|salaatti 🥬|salaattisekoitus 🥬|rucola|pinaatti|lehtikaali|
+   kaali|kukkakaali|parsakaali 🥦|brokkoli 🥦|ruusukaali|kiinankaali|kesäkurpitsa|kurpitsa|munakoiso 🍆|
+   sieni/sienet/sieniä 🍄|kantarelli 🍄|suppilovahvero 🍄|retiisi|lanttu|nauris|punajuuri/punajuuret/punajuuria|
+   juures/juurekset/juureksia|selleri|palsternakka|artisokka|fenkoli|inkivääri|korianteri|basilika|persilja|
+   tilli|minttu|rosmariini|timjami|yrtti|maissintähkä 🌽|parsa|raparperi|itu/idut|verso|sokeriherne|
+   herneenpalko|vihannes/vihannekset/vihanneksia`,
   // 1 Leivät
-  `leipä 🍞|leivä 🍞|leipi 🍞|ruisleipä 🍞|paahtoleipä 🍞|näkkileipä|limppu|sämpylä|sämpylö|patonki 🥖|patong 🥖|
-   croissant 🥐|sarvi 🥐|pulla|pullat|korvapuusti|munkki|munki|donitsi 🍩|piirakka|piiraka|karjalanpiirakka|
-   rinkeli|ciabatta|focaccia|tortilla|pita|hampurilaissämpylä|hodarisämpylä|kakku 🍰|kakut 🍰|leivonnai|pannukakku 🥞`,
+  `leipä 🍞|limppu 🍞|limppa 🍞|puikula 🍞|reissumies 🍞|ruispala 🍞|sämpylä|patonki 🥖|croissant/croissantit/croissanteja 🥐|
+   voisarvi 🥐|sarvi 🥐|pulla|korvapuusti|munkki 🍩|donitsi 🍩|piirakka 🥧|rinkeli 🥨|rinkilä 🥨|vesirinkeli 🥯|
+   bagel/bagelit/bageleita 🥯|ciabatta|focaccia|tortilla|pita|rieska 🫓|korppu|näkkäri|kakku 🍰|leivos/leivokset/leivoksia 🧁|
+   muffinsi 🧁|muffini 🧁|kuppikakku 🧁|kääretorttu|torttu|viineri|pasteija|leivonnainen|pannukakku 🥞|
+   lettu 🥞|ohukainen 🥞|vohveli 🧇|kalakukko -`,
   // 2 Liha ja kala
-  `liha 🥩|jauheliha 🥩|naudanliha 🥩|sianliha 🥩|pihvi 🥩|kana 🍗|kanat 🍗|broileri 🍗|broiler 🍗|kalkkuna 🍗|
-   koipi 🍗|koivet 🍗|siipi 🍗|siivet 🍗|rintafilee|filee|fileet|suikale|suikalee|kassler|kyljys|paisti|
-   pekoni 🥓|makkara|makkaro|nakki|nakit|nakkeja|grillimakkara|kinkku|kinkut|leikkele|leikkelee|leike|leikkeet|salami|meetvursti|
-   kebab|lihapulla|lihapullat|pyörykkä|pyöryk|maksa|maksamakkara|maksalaatikko|lihapiirakka|
-   kala 🐟|kalat 🐟|lohi 🐟|lohta 🐟|lohifilee 🐟|kirjolohi 🐟|silakka 🐟|siika 🐟|ahven 🐟|kuha 🐟|turska 🐟|
-   seiti 🐟|muikku 🐟|silli 🐟|katkarapu 🦐|katkarav 🦐|rapu 🦀|ravut 🦀|simpukka|surimi|mäti`,
+  `liha 🥩|pihvi 🥩|entrecote 🥩|paisti|kyljys/kyljykset/kyljyksiä|kassler|kana 🍗|broileri 🍗|kalkkuna 🍗|
+   koipi 🍗|siipi 🍗|filee|file|suikale|kebab|gyros|pekoni 🥓|makkara|lenkki|nakki 🌭|chorizo|salami|
+   meetvursti|kinkku|leike/leikkeet/leikkeitä|leikkele|lihapulla|pyörykkä|maksa|laatikko|kiusaus|keitto|lasagne|pyttipannu|
+   perunasalaatti|pastasalaatti|kanasalaatti|rosolli|sillisalaatti|
+   kala 🐟|lohi/lohta/lohet/lohia 🐟|siika 🐟|silakka 🐟|ahven 🐟|kuha 🐟|hauki 🐟|muikku 🐟|turska 🐟|
+   seiti 🐟|silli 🐟|makrilli 🐟|katkarapu 🦐|rapu 🦀|simpukka|kalmari 🦑|osteri 🦪|surimi|mäti`,
   // 3 Maitotuotteet ja munat
-  `maito 🥛|maidot 🥛|piimä|kerma|kermat|ruokakerma|kuohukerma|vispikerma|kermaviili|smetana|creme|jogurtti|jogurt|
-   rahka|rahkat|viili|viilit|vanukas|vanukkaa|välipalarahka|kaurajuoma|soijajuoma|mantelijuoma|
-   juusto 🧀|juustot 🧀|juuston 🧀|mozzarella 🧀|fetajuusto 🧀|feta 🧀|halloumi 🧀|parmesaani 🧀|raejuusto|
-   tuorejuusto 🧀|sulatejuusto 🧀|voi 🧈|levite|margariini|oivariini|muna 🥚|munat 🥚|kananmuna 🥚|kananmunat 🥚|
-   tofu|hummus|tzatziki|kaurafraiche|ranskankerma`,
+  `maito 🥛|piimä|kerma|smetana|creme|jogurtti|jukurtti|jugu|rahka|viili|vanukas/vanukkaat/vanukkaita 🍮|
+   juusto 🧀|mozzarella 🧀|feta 🧀|halloumi 🧀|parmesaani 🧀|cheddar 🧀|emmental 🧀|edam 🧀|gouda 🧀|
+   brie 🧀|camembert 🧀|oltermanni 🧀|aura 🧀|raejuusto|juustoraaste 🧀|voi/voita 🧈|levite/levitteet/levitteitä 🧈|margariini 🧈|oivariini 🧈|
+   muna 🥚|kaurajuoma|soijajuoma|mantelijuoma|jogurttijuoma|maitojuoma|kefiiri|tofu|hummus|tzatziki|
+   kaurafraiche|ranskankerma|oatly|alpro`,
   // 4 Pakasteet
-  `pakaste|pakastettu|jäätelö 🍦|jäätelöt 🍦|jäätelöö 🍦|mehujää|pizza 🍕|pizzat 🍕|ranskalai 🍟|ranskikset 🍟|
-   kalapuikko|kalapuikot|herne|herneet|hernekeitto|maissi 🌽|vihannessekoitus|wokkivihannekset|jääpala`,
+  `pakaste|jäätelö 🍦|jätski 🍦|pehmis 🍦|jäätelöpuikko 🍦|jäätelökakku 🍨|mehujää/mehujäät/mehujäitä|pizza 🍕|
+   ranskalainen 🍟|ranskis/ranskikset/ranskiksia 🍟|kalapuikko|herne|hernekeitto|maissi 🌽|
+   vihannessekoitus|wokkivihannes/wokkivihannekset/wokkivihanneksia|jääpala 🧊|jääkuutio 🧊|
+   hampurilainen 🍔`,
   // 5 Kuivatuotteet
-  `pasta 🍝|pastat 🍝|makaroni 🍝|spagetti 🍝|nuudeli|nuudelit|riisi 🍚|jauho|jauhot|vehnäjauho|ruisjauho|
-   hiutale|kaurahiutale|puuro|mysli|muro|murot|granola|sokeri|tomusokeri|suola 🧂|pippuri|mauste|maustee|kaneli|
-   öljy|rypsiöljy|oliiviöljy|etikka|ketsuppi|sinappi|majoneesi|kastike|kastikkee|soija|pesto|liemikuutio|liemi|fondi|
-   säilyke|säilykkee|tölkki|murska|tomaattimurska|tomaattipyree|pyree|papu 🫘|pavut 🫘|linssi|linssit|kikherne|
-   kahvi ☕|kahvit ☕|tee 🍵|teet 🍵|teepussi 🍵|teepussit 🍵|kaakao|keksi 🍪|keksit 🍪|keksejä 🍪|suklaa 🍫|suklaat 🍫|karkki 🍬|karkit 🍬|
-   makeinen 🍬|makeiset 🍬|lakritsi|purukumi|sipsi|sipsit|popcorn 🍿|pähkinä|pähkinät|maapähkinä 🥜|manteli|
-   rusina|rusinat|siemen|siemenet|hillo|hunaja 🍯|siirappi|leivinjauhe|ruokasooda|vaniljasokeri|hiiva|
-   tonnikala|sardiini|oliivi|oliivit|kurkkusalaatti|tortillalastu|näkkäri|riisikakku|patukka|patukat`,
+  `pasta 🍝|makaroni 🍝|makarooni 🍝|spagetti 🍝|penne 🍝|fusilli 🍝|tagliatelle 🍝|lasagnelevy|nuudeli|
+   riisi 🍚|couscous|bulgur|kvinoa|jauho|hiutale|puuro|mysli|muro/murot|granola|sokeri|siirappi|suola 🧂|
+   pippuri|mauste|jauhe|kaneli|kardemumma|curry|oregano|öljy|etikka|ketsuppi|sinappi|majoneesi|kastike/kastikkeet/kastikkeita|
+   soija|pesto|liemikuutio|liemi/liemet/liemiä|fondi|säilyke/säilykkeet/säilykkeitä|murska|pyree|papu 🫘|linssi|kikherne|
+   kahvi ☕|kaffe ☕|espresso ☕|mokka ☕|juhla_mokka ☕|kulta_katriina ☕|presidentti ☕|nescafe ☕|
+   tee/teetä 🍵|teepussi 🍵|lipton 🍵|kaakao|keksi 🍪|oreo 🍪|domino 🍪|suklaa 🍫|suklaalevy 🍫|patukka|
+   pätkis 🍫|geisha 🍫|tupla 🍫|daim 🍫|kitkat 🍫|mars 🍫|snickers 🍫|twix 🍫|karkki 🍬|makeinen 🍬|
+   marianne 🍬|haribo 🍬|lakritsi|salmiakki|purukumi|tikkari 🍭|sipsi|lastu|pringles|taffel|popcorn 🍿|
+   pähkinä|maapähkinä 🥜|manteli|rusina|siemen/siemenet/siemeniä|hillo|marmeladi|hunaja 🍯|nutella|
+   maapähkinävoi|leivinjauhe|ruokasooda|hiiva|tonnikala -|sardiini|oliivi 🫒|kurkkusalaatti|riisikakku 🍘|
+   elovena|felix|heinz`,
   // 6 Juomat
-  `juoma|juomat|mehu 🧃|mehut 🧃|tuoremehu 🧃|limu|limut|limsa|limsat|virvoitusjuoma|cola|kokis|vesi|vedet|
-   kivennäisvesi|vichy|olut 🍺|oluet 🍺|kalja 🍺|siideri|lonkero|viini 🍷|viinit 🍷|kuohuviini 🍾|energiajuoma|
-   smoothie|jääkahvi|urheilujuoma`,
+  `juoma|mehu 🧃|limonadi 🥤|limu 🥤|limsa 🥤|limppari 🥤|limpska 🥤|limska 🥤|cola 🥤|kola 🥤|kokis 🥤|
+   pepsi 🥤|fanta 🥤|sprite 🥤|jaffa 🥤|pommac 🥤|vesi/vedet/vettä|vichy|novelle|
+   olut/oluet/oluita/olutta 🍺|kalja 🍺|bisse 🍺|koff 🍺|olvi 🍺|lapin_kulta 🍺|sandels 🍺|
+   heineken 🍺|siideri|lonkero|viini 🍷|kuohuviini 🍾|energiajuoma|red_bull|battery|smoothie|jääkahvi|jäätee`,
   // 7 Kodintarvikkeet
-  `paperi 🧻|wc-paperi 🧻|vessapaperi 🧻|talouspaperi 🧻|nenäliina|lautasliina|pesuaine|astianpesuaine|
-   pyykinpesuaine|konetiskiaine|tiskiaine|huuhteluaine|puhdistusaine|wc-puhdistus|saippua 🧼|käsisaippua 🧼|
-   shampoo|hoitoaine|suihkusaippua|hammastahna|hammasharja 🪥|deodorantti|deo|partahöylä|terä|terät|vaippa|vaipat|
-   side|siteet|tamponi|vanupuikko|laastari|roskapussi|pussi|pussit|pakastepussi|folio|kelmu|leivinpaperi|
-   kynttilä 🕯️|kynttilät 🕯️|paristo 🔋|paristot 🔋|lamppu|polttimo|tiskiharja|tiskirätti|rätti|
-   kertakäyttö|aurinkovoide|käsidesi|lemmikki|kissanruoka|koiranruoka|hiekka`,
+  `paperi 🧻|leivinpaperi -|paperirulla 🧻|serla 🧻|lambi 🧻|nenäliina|lautasliina|servetti|pesuaine|
+   pesujauhe|tiskiaine|huuhteluaine|saippua 🧼|shampoo 🧴|hoitoaine 🧴|suihkugeeli 🧴|voide/voiteet/voiteita 🧴|
+   hammastahna|hammasharja 🪥|hammaslanka|deodorantti|deo|partahöylä 🪒|partavaahto|terä|vaippa|side/siteet/siteitä|
+   tamponi|tampooni|vanupuikko|vanulappu|laastari 🩹|roskapussi|pussi|pakastepussi|minigrip|folio|kelmu|
+   kynttilä 🕯️|tuikku 🕯️|paristo 🔋|akku 🔋|lamppu 💡|polttimo 💡|tiskiharja|tiskirätti|rätti|
+   pesusieni 🧽|lautanen 🍽️|muki|kassi 🛍️|ilmapallo 🎈|aurinkovoide/aurinkovoiteet|käsidesi|kissanruoka|koiranruoka|
+   hiekka|tulitikku|grillihiili|sytytysneste|luuta 🧹|ämpäri 🪣|pahvilaatikko|
+   fairy|pampers|libero|gillette 🪒|colgate|pepsodent|sensodyne|nivea|rexona|omo|ariel|finish`,
 ];
 
 // Etuliitteet, jotka ratkaisevat osaston pääsanasta riippumatta (esim. pakastemustikka).
 const ETULIITTEET = [['pakaste', 4]];
 
-// Sanat, joiden osuma kelpaa vain kokonaisena sanana (muuten liian monta vääriä osumia).
-const VAIN_KOKONAISENA = 4;
+// Lyhyet sanat (esim. tee, voi, deo) tunnistetaan vain kokonaisina, ei yhdyssanan lopusta.
+const LYHYT = 4;
+const VOKAALIT = 'aeiouyäö';
 
-const SANAT = [];
+// Astevaihtelu viimeisessä tavussa (kurkku -> kurkut, leipä -> leivät, patonki -> patongit).
+const HEIKKO = [
+  [/kk([aeiouyäö])$/, 'k$1'], [/pp([aeiouyäö])$/, 'p$1'], [/tt([aeiouyäö])$/, 't$1'],
+  [/nt([aeiouyäö])$/, 'nn$1'], [/mp([aeiouyäö])$/, 'mm$1'], [/nk([aeiouyäö])$/, 'ng$1'],
+  [/lt([aeiouyäö])$/, 'll$1'], [/rt([aeiouyäö])$/, 'rr$1'],
+  [/([aeiouyäö])p([aeiouyäö])$/, '$1v$2'], [/([aeiouyäö])t([aeiouyäö])$/, '$1d$2'],
+];
+function heikko(sana) {
+  for (const [kuvio, korvaus] of HEIKKO) if (kuvio.test(sana)) return sana.replace(kuvio, korvaus);
+  return sana;
+}
+
+// Ostoslistalla tavalliset muodot: yksikkö, monikko ja partitiivi (kiivi, kiivit, kiiviä, kiivejä).
+function muodot(sana) {
+  const tulos = new Set([sana]);
+  const lisaa = (alku, paatteet) => { for (const p of paatteet) tulos.add(alku + p); };
+  const loppu = sana.at(-1), h = heikko(sana);
+  if (sana.endsWith('nen')) {
+    lisaa(sana.slice(0, -3), ['set', 'sia', 'siä', 'sta', 'stä']);   // makeinen -> makeiset, makeisia
+    return tulos;
+  }
+  if (!VOKAALIT.includes(loppu)) {
+    lisaa(sana, ['ia', 'iä', 'ta', 'tä', 'it', 'eja', 'ejä']);           // couscousia, hummusta, nuggetit
+    return tulos;   // epäsäännölliset muodot (ananakset) sanastossa
+  }
+  lisaa(sana, ['t', 'a', 'ä']);
+  tulos.add(h + 't');
+  if (VOKAALIT.includes(sana.at(-2))) lisaa(sana, ['ta', 'tä']);        // kaakaota, suklaata, shampoota
+  if (loppu === 'a' || loppu === 'ä') {
+    lisaa(sana.slice(0, -1), ['oita', 'öitä', 'oja', 'öjä', 'ia', 'iä']);   // omenoita, kanoja, leipiä
+    lisaa(h.slice(0, -1), ['oita', 'öitä', 'oja', 'öjä', 'ia', 'iä']);      // mansikoita
+  } else if (loppu === 'i') {
+    lisaa(sana.slice(0, -1), ['eja', 'ejä', 'eita', 'eitä', 'et']);       // kiivejä, banaaneja, lohet
+    lisaa(h.slice(0, -1), ['eja', 'ejä', 'et']);                          // koivet, siivet
+  } else if (loppu === 'e') {
+    lisaa(sana, ['et', 'ita', 'itä', 'tta', 'ttä', 'ja', 'jä']);         // herneet, herneitä, limejä
+  } else {
+    lisaa(sana, ['ja', 'jä', 'ita', 'itä']);                             // kurkkuja, maitoja, kuutioita
+  }
+  return tulos;
+}
+
+// Sanakirja: muoto -> { perus, osasto, emoji }. Oma sanasto voittaa CLDR:n.
+const MUODOT = new Map();
+const FRAASIT = [];   // monisanaiset nimet, esim. "red bull"
+
+const cldrEmoji = new Map(CLDR.map(([sana, emoji]) => [sana, emoji]));
+
+function lisaaSana(kirjoitusasut, osasto, emoji, oma) {
+  const [perus] = kirjoitusasut;
+  if (!oma && MUODOT.has(perus)) return;
+  if (oma && !emoji) emoji = kirjoitusasut.map(a => cldrEmoji.get(a)).find(Boolean) || '';
+  if (emoji === '-') emoji = '';
+  const tieto = { perus, osasto, emoji };
+  if (perus.includes(' ')) { FRAASIT.push(tieto); return; }
+  for (const asu of kirjoitusasut) {
+    for (const m of muodot(asu)) {
+      if (!oma && MUODOT.has(m)) continue;
+      // Sama muoto kahdella sanalla: ensin sanastossa ollut säilyy (perusmuoto ensin).
+      if (oma && MUODOT.has(m) && MUODOT.get(m).oma && MUODOT.get(m).perus === m) continue;
+      MUODOT.set(m, { ...tieto, oma });
+    }
+  }
+}
+
 SANASTO.forEach((rivi, osasto) => {
   for (const kohta of rivi.split('|')) {
-    const [sana, emoji] = kohta.trim().split(/\s+/);
-    if (sana) SANAT.push({ sana, emoji: emoji || '', osasto });
+    const [sanat, emoji] = kohta.trim().split(/\s+/);
+    if (sanat) lisaaSana(sanat.replace(/_/g, ' ').split('/'), osasto, emoji || '', true);
   }
 });
-// Erikoistapaukset, joissa yleisempi sana veisi väärään paikkaan.
-SANAT.push(
-  { sana: 'pesusieni', emoji: '', osasto: 7 },
-  { sana: 'leivinpaperi', emoji: '', osasto: 7 },
-  { sana: 'pakastepussi', emoji: '', osasto: 7 },
-  { sana: 'sipsit', emoji: '', osasto: 5 },
-);
+for (const [sana, emoji, osasto] of CLDR) lisaaSana([sana], osasto, emoji, false);
+
+// Sanan tunnistus sen lopusta: pisin tunnettu loppuosa voittaa (tonnikala ennen kalaa).
+// Alkuosa saa olla mitä tahansa (yhdyssanan määriteosa), kunhan se on vähintään 3 kirjainta
+// (muuten esim. la|kana tunnistuisi kanaksi).
+function tunnistaSana(sana) {
+  for (let alku = 0; alku < sana.length - 1; alku++) {
+    if (alku === 1 || alku === 2) continue;
+    const osuma = MUODOT.get(sana.slice(alku));
+    if (!osuma) continue;
+    if (alku > 0 && osuma.perus.length < LYHYT) continue;
+    return osuma;
+  }
+  return null;
+}
 
 const valimuisti = new Map();
 
@@ -100,24 +191,14 @@ export function tunnista(nimi) {
   const avain = String(nimi).toLowerCase();
   if (valimuisti.has(avain)) return valimuisti.get(avain);
 
-  const sanat = avain.replace(/[^a-zåäö-]+/g, ' ').split(/[\s-]+/).filter(s => s.length > 1);
-  let paras = null, parasPisteet = -1;
+  const sanat = avain.replace(/[^a-zåäöéè-]+/g, ' ').replace(/[éè]/g, 'e')
+    .split(/[\s-]+/).filter(s => s.length > 1);
+  const lause = ' ' + sanat.join(' ') + ' ';
 
-  sanat.forEach((sana, i) => {
-    const viimeinen = i === sanat.length - 1;
-    for (const s of SANAT) {
-      const kohta = sana.lastIndexOf(s.sana);
-      if (kohta < 0) continue;
-      const jalkeen = sana.length - (kohta + s.sana.length);
-      const kokonainen = kohta === 0 && jalkeen <= 1;
-      if (s.sana.length < VAIN_KOKONAISENA && !kokonainen) continue;
-      const loppu = jalkeen <= 3;  // osuma sanan lopussa = yhdyssanan pääsana (+ taivutuspääte)
-      const pisteet = (loppu ? 1000 : 0) + (viimeinen ? 100 : 0) + s.sana.length * 2 - jalkeen;
-      if (pisteet > parasPisteet) { paras = s; parasPisteet = pisteet; }
-    }
-  });
+  let osuma = FRAASIT.find(f => lause.includes(' ' + f.perus + ' ')) || null;
+  for (let i = sanat.length - 1; i >= 0 && !osuma; i--) osuma = tunnistaSana(sanat[i]);
 
-  let tulos = paras ? { osasto: paras.osasto, emoji: paras.emoji } : { osasto: MUUT, emoji: '' };
+  let tulos = osuma ? { osasto: osuma.osasto, emoji: osuma.emoji } : { osasto: MUUT, emoji: '' };
   for (const [alku, osasto] of ETULIITTEET) {
     // Kodintarvikkeet (esim. pakastepussi) pysyvät kodintarvikkeina.
     if (tulos.osasto !== 7 && sanat.some(s => s.startsWith(alku))) tulos = { osasto, emoji: tulos.emoji };

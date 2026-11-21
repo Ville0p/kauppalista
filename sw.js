@@ -10,6 +10,7 @@ const TIEDOSTOT = [
   'style.css',
   'app.js',
   'osastot.js',
+  'emojit.js',
   'asetukset.js',
   'kopiot.js',
   'siivous.js',
