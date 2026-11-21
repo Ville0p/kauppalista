@@ -48,4 +48,25 @@ export function kaynnistaAsetukset(lueArvot, tallennaArvo) {
 
   document.getElementById('asetukset-valmis').addEventListener('click', () => ikkuna.close());
   ikkuna.addEventListener('click', e => { if (e.target === ikkuna) ikkuna.close(); });
+
+  naytaVersio();
+}
+
+// Versio = käytössä olevan version julkaisuhetki. GitHub Pages antaa julkaisun jokaiselle tiedostolle
+// julkaisuhetken Last-Modified-otsakkeeksi, joten versiota ei tarvitse päivittää käsin.
+// Otsake luetaan ensin service workerin välimuistista (sama versio kuin nyt käytössä, toimii
+// ilman verkkoa), muuten palvelimelta.
+async function naytaVersio() {
+  const kohta = document.getElementById('versio');
+  const osoite = new URL('app.js', location.href).href;
+  let vastaus = null;
+  try { vastaus = self.caches && await caches.match(osoite); } catch {}
+  if (!vastaus) {
+    try { vastaus = await fetch(osoite, { method: 'HEAD' }); } catch {}
+  }
+  const aika = new Date(vastaus && vastaus.headers.get('Last-Modified'));
+  if (isNaN(aika)) return;   // esim. paikallinen testipalvelin ilman otsaketta
+  const kaksi = n => String(n).padStart(2, '0');
+  kohta.textContent = `Versio ${aika.getDate()}.${aika.getMonth() + 1}.${aika.getFullYear()} `
+    + `${kaksi(aika.getHours())}.${kaksi(aika.getMinutes())}`;
 }

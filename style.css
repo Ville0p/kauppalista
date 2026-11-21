@@ -254,6 +254,8 @@ li.otettu .emoji { opacity: 0.5; }
   border: 0;
   border-radius: 12px;
 }
+#versio { margin: 12px 0 0; font-size: 13px; text-align: center; color: #9a9a9a; }
+#versio:empty { display: none; }
 
 .poista {
   flex: none;
