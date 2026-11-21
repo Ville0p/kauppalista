@@ -2,7 +2,7 @@ import {
   doc, onSnapshot, writeBatch, deleteField, serverTimestamp,
 } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js';
 import { kuukausisiivous } from './siivous.js';
-import { tunnista, OSASTOT, MUUT } from './osastot.js';
+import { tunnista, OSASTOT, JARJESTYS, osastonPaikka, kelpaaOsasto } from './osastot.js';
 import { kaynnistaAsetukset, kaytaAsetukset } from './asetukset.js';
 import { tietokanta, poistaKopio, kunListaPaattyy, siivoaVanhat, kelpaaId } from './kopiot.js';
 
@@ -152,7 +152,7 @@ function virhe(e) {
 
 // Itse valittu osasto (tallennettu listaan) voittaa automaattisen tunnistuksen.
 function osastoOf(t) {
-  return Number.isInteger(t.osasto) && t.osasto >= 0 && t.osasto <= MUUT ? t.osasto : tunnista(t.nimi).osasto;
+  return kelpaaOsasto(t.osasto) ? t.osasto : tunnista(t.nimi).osasto;
 }
 
 function piirra() {
@@ -160,7 +160,7 @@ function piirra() {
   // Kaupan osastojärjestys, saman osaston sisällä lisäysjärjestys.
   const kaikki = Object.entries(tuotteet)
     .filter(([, t]) => t && typeof t.nimi === 'string')
-    .map(([tid, t]) => [tid, t, osastoOf(t)])
+    .map(([tid, t]) => [tid, t, osastonPaikka(osastoOf(t))])
     .sort(([, a, oa], [, b, ob]) => oa - ob || (a.luotu || 0) - (b.luotu || 0));
   const jarjestys = [...kaikki.filter(([, t]) => !t.otettu), ...kaikki.filter(([, t]) => t.otettu)];
 
@@ -234,10 +234,10 @@ function valitseOsasto(tid, t) {
   valintaOtsikko.textContent = t.nimi;
   valintaNapit.textContent = '';
   const nykyinen = osastoOf(t);
-  OSASTOT.forEach((nimi, i) => {
+  JARJESTYS.forEach(i => {
     const b = document.createElement('button');
     b.type = 'button';
-    b.textContent = nimi;
+    b.textContent = OSASTOT[i];
     if (i === nykyinen) b.className = 'valittu';
     b.addEventListener('click', () => {
       valinta.close();
@@ -302,7 +302,8 @@ function tallennaLuonnos(ensimmainen) {
 lomake.addEventListener('submit', e => {
   e.preventDefault();
   if (!listaId) return;
-  const nimi = kentta.value.trim().slice(0, 100);
+  // Pieni pilke: "pieru" kirjoitetaan listaan muodossa "piaru" (emoji tulee sanastosta).
+  const nimi = kentta.value.trim().slice(0, 100).replace(/pieru/gi, m => m[0] === 'P' ? 'Piaru' : 'piaru');
   if (!nimi) return;
   kentta.value = '';
   const tid = uusiTuoteId();

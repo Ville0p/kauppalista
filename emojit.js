@@ -100,15 +100,15 @@ export const CLDR = [
   ['akku', '🔋', 7],   // akku
   ['kynttilä', '🕯️', 7],   // kynttilä
   ['hehkulamppu', '💡', 7],   // hehkulamppu
-  ['laastari', '🩹', 7],   // laastari
+  ['laastari', '🩹', 9],   // laastari
   ['hiirenloukku', '🪤', 7],   // hiirenloukku
-  ['partaveitsi', '🪒', 7],   // partaveitsi
-  ['hoitoainepullo', '🧴', 7],   // hoitoainepullo
+  ['partaveitsi', '🪒', 9],   // partaveitsi
+  ['hoitoainepullo', '🧴', 9],   // hoitoainepullo
   ['hakaneula', '🧷', 7],   // hakaneula
   ['luuta', '🧹', 7],   // luuta
   ['paperirulla', '🧻', 7],   // paperirulla
   ['ämpäri', '🪣', 7],   // ämpäri
-  ['saippua', '🧼', 7],   // saippua
-  ['hammasharja', '🪥', 7],   // hammasharja
+  ['saippua', '🧼', 9],   // saippua
+  ['hammasharja', '🪥', 9],   // hammasharja
   ['pesusieni', '🧽', 7],   // pesusieni
 ];

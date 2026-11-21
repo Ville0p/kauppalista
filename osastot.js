@@ -8,18 +8,28 @@
 
 import { CLDR } from './emojit.js';
 
+// Osaston tunnus on sen paikka tässä taulukossa. Tunnus tallentuu listaan, kun käyttäjä valitsee
+// tuotteelle osaston itse, joten tunnuksia ei saa muuttaa: uusi osasto saa aina uuden tunnuksen
+// taulukon loppuun, ja näyttöjärjestys määritellään erikseen (JARJESTYS).
 export const OSASTOT = [
-  'Hedelmät ja vihannekset',
-  'Leivät',
-  'Liha ja kala',
-  'Maitotuotteet ja munat',
-  'Pakasteet',
-  'Kuivatuotteet',
-  'Juomat',
-  'Kodintarvikkeet',
-  'Muut',
+  'Hedelmät ja vihannekset',   // 0
+  'Leivät',                    // 1
+  'Liha ja kala',              // 2
+  'Maitotuotteet ja munat',    // 3
+  'Pakasteet',                 // 4
+  'Kuivatuotteet',             // 5
+  'Juomat',                    // 6
+  'Kodintarvikkeet',           // 7
+  'Muut',                      // 8
+  'Hygienia ja kosmetiikka',   // 9
+  'Vaatteet ja kengät',        // 10
 ];
-export const MUUT = OSASTOT.length - 1;
+export const MUUT = 8;
+// Osastot kaupan järjestyksessä (listan järjestys ja osaston valinta).
+export const JARJESTYS = [0, 1, 2, 3, 4, 5, 6, 7, 9, 10, 8];
+const PAIKKA = new Map(JARJESTYS.map((osasto, paikka) => [osasto, paikka]));
+export const osastonPaikka = osasto => PAIKKA.get(osasto) ?? PAIKKA.get(MUUT);
+export const kelpaaOsasto = osasto => Number.isInteger(osasto) && PAIKKA.has(osasto);
 
 // Sanaston rivit: 'perusmuoto' tai 'perusmuoto emoji'. Epäsäännölliset muodot vinoviivalla:
 // 'olut/oluet/oluita/olutta'. Monisanainen nimi välilyönnillä: 'red_bull' (alaviiva = välilyönti).
@@ -55,7 +65,11 @@ const SANASTO = [
   // 3 Maitotuotteet ja munat
   `maito 🥛|piimä|kerma|smetana|creme|jogurtti|jukurtti|jugu|rahka|viili|vanukas/vanukkaat/vanukkaita 🍮|
    juusto 🧀|mozzarella 🧀|feta 🧀|halloumi 🧀|parmesaani 🧀|cheddar 🧀|emmental 🧀|edam 🧀|gouda 🧀|
-   brie 🧀|camembert 🧀|oltermanni 🧀|aura 🧀|raejuusto|juustoraaste 🧀|voi/voita 🧈|levite/levitteet/levitteitä 🧈|margariini 🧈|oivariini 🧈|
+   brie 🧀|camembert 🧀|oltermanni 🧀|aura 🧀|raejuusto 🧀|juustoraaste 🧀|koskenlaskija 🧀|atleet 🧀|
+   turunmaa 🧀|polar 🧀|viola 🧀|philadelphia 🧀|castello 🧀|mascarpone 🧀|ricotta 🧀|pecorino 🧀|
+   gorgonzola 🧀|havarti 🧀|maasdam 🧀|gruyere 🧀|grana_padano 🧀|apetina 🧀|
+   voi/voita 🧈|levite/levitteet/levitteitä 🧈|margariini 🧈|oivariini 🧈|voimariini 🧈|keiju 🧈|flora 🧈|
+   becel 🧈|benecol 🧈|bregott 🧈|rama 🧈|
    muna 🥚|kaurajuoma|soijajuoma|mantelijuoma|jogurttijuoma|maitojuoma|kefiiri|tofu|hummus|tzatziki|
    kaurafraiche|ranskankerma|oatly|alpro`,
   // 4 Pakasteet
@@ -82,13 +96,30 @@ const SANASTO = [
    heineken 🍺|siideri|lonkero|viini 🍷|kuohuviini 🍾|energiajuoma|red_bull|battery|smoothie|jääkahvi|jäätee`,
   // 7 Kodintarvikkeet
   `paperi 🧻|leivinpaperi -|paperirulla 🧻|serla 🧻|lambi 🧻|nenäliina|lautasliina|servetti|pesuaine|
-   pesujauhe|tiskiaine|huuhteluaine|saippua 🧼|shampoo 🧴|hoitoaine 🧴|suihkugeeli 🧴|voide/voiteet/voiteita 🧴|
-   hammastahna|hammasharja 🪥|hammaslanka|deodorantti|deo|partahöylä 🪒|partavaahto|terä|vaippa|side/siteet/siteitä|
-   tamponi|tampooni|vanupuikko|vanulappu|laastari 🩹|roskapussi|pussi|pakastepussi|minigrip|folio|kelmu|
+   pesujauhe|tiskiaine|huuhteluaine|roskapussi|pussi|pakastepussi|minigrip|folio|kelmu|
    kynttilä 🕯️|tuikku 🕯️|paristo 🔋|akku 🔋|lamppu 💡|polttimo 💡|tiskiharja|tiskirätti|rätti|
-   pesusieni 🧽|lautanen 🍽️|muki|kassi 🛍️|ilmapallo 🎈|aurinkovoide/aurinkovoiteet|käsidesi|kissanruoka|koiranruoka|
-   hiekka|tulitikku|grillihiili|sytytysneste|luuta 🧹|ämpäri 🪣|pahvilaatikko|
-   fairy|pampers|libero|gillette 🪒|colgate|pepsodent|sensodyne|nivea|rexona|omo|ariel|finish`,
+   pesusieni 🧽|lautanen 🍽️|muki|kassi 🛍️|ilmapallo 🎈|kissanruoka|koiranruoka|
+   hiekka|tulitikku|grillihiili|sytytysneste|luuta 🧹|ämpäri 🪣|pahvilaatikko|fairy|omo|ariel|finish`,
+  // 8 Muut: tunnetut sanat, jotka eivät ole kaupan tuotteita (pysyvät listan lopussa)
+  `yksisarvinen 🦄|piaru/pieru 😶‍🌫️`,
+  // 9 Hygienia ja kosmetiikka
+  `saippua 🧼|shampoo 🧴|hoitoaine 🧴|suihkugeeli 🧴|voide/voiteet/voiteita 🧴|aurinkovoide/aurinkovoiteet 🧴|
+   seerumi|kasvovesi|meikinpoistoaine|meikinpoistoliina|kasvonaamio|hammastahna|hammasharja 🪥|hammaslanka|
+   suuvesi|deodorantti|deo|antiperspirantti|partahöylä 🪒|partaterä 🪒|parranajokone 🪒|partavaahto|partavesi|
+   terä|hajuvesi|vaippa|side/siteet/siteitä|pikkuhousunsuoja|tamponi|tampooni|kuukuppi|intiimipesu|kondomi|
+   vanupuikko|vanulappu|vanu|laastari 🩹|käsidesi|
+   meikki 💄|kajaali 💄|ripsiväri 💄|luomiväri 💄|huulipuna 💄|huulikiilto 💄|huulirasva|poskipuna 💄|
+   meikkivoide 💄|peitevoide 💄|puuteri 💄|aurinkopuuteri 💄|bronzer 💄|pohjustusvoide 💄|kulmakynä 💄|
+   rajauskynä 💄|kulmaväri 💄|kynsilakka 💅|kynsilakanpoistoaine 💅|kynsiviila 💅|kynsisakset|pinsetti|
+   hiuslakka|hiusvaha|hiusgeeli|hiusväri|muotovaahto|hiuslenkki|hiuspinni|kampa|hiusharja|
+   pampers|libero|gillette 🪒|colgate|pepsodent|sensodyne|nivea|rexona|dove|lumene|maybelline|loreal|oreal`,
+  // 10 Vaatteet ja kengät
+  `lenkkari/lenkkarit/lenkkareita 👟|lenkkitossu 👟|tennari/tennarit/tennareita 👟|tossu 👟|kenkä 👞|saapas/saappaat/saappaita 👢|sandaali 👡|
+   varvassandaali 🩴|sukka 🧦|sukkahousut/sukkahousuja|housut/housuja 👖|farkut/farkkuja 👖|shortsit/shortseja 🩳|
+   kalsari/kalsarit/kalsareita 🩲|bokserit/boksereita 🩲|alushousut/alushousuja|rintaliivit/rintaliivejä|toppi|
+   paita 👕|kauluspaita 👔|pusero 👚|villapaita|huppari|collegepaita|takki 🧥|liivi|pipo|lippis 🧢|lippalakki 🧢|
+   hattu 👒|kaulaliina 🧣|huivi 🧣|hanska 🧤|käsine 🧤|lapanen 🧤|rukkanen 🧤|mekko 👗|hame|uimapuku 🩱|
+   bikinit/bikinejä 👙|pyjama|yöpaita|legginsit/legginsejä|trikoot/trikoita|body|solmio 👔|vyö`,
 ];
 
 // Etuliitteet, jotka ratkaisevat osaston pääsanasta riippumatta (esim. pakastemustikka).
@@ -200,8 +231,9 @@ export function tunnista(nimi) {
 
   let tulos = osuma ? { osasto: osuma.osasto, emoji: osuma.emoji } : { osasto: MUUT, emoji: '' };
   for (const [alku, osasto] of ETULIITTEET) {
-    // Kodintarvikkeet (esim. pakastepussi) pysyvät kodintarvikkeina.
-    if (tulos.osasto !== 7 && sanat.some(s => s.startsWith(alku))) tulos = { osasto, emoji: tulos.emoji };
+    // Muut kuin ruoka (esim. pakastepussi) pysyvät omalla osastollaan.
+    const eiRuokaa = [7, 9, 10].includes(tulos.osasto);
+    if (!eiRuokaa && sanat.some(s => s.startsWith(alku))) tulos = { osasto, emoji: tulos.emoji };
   }
   valimuisti.set(avain, tulos);
   return tulos;
