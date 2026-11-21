@@ -1,23 +1,9 @@
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js';
 import {
-  initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
   doc, onSnapshot, setDoc, updateDoc, deleteDoc, deleteField, serverTimestamp,
 } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js';
 import { tunnista, OSASTOT, MUUT } from './osastot.js';
 import { kaynnistaAsetukset, kaytaAsetukset } from './asetukset.js';
-
-// Firebase-verkkosovelluksen asetukset. Nämä eivät ole salaisuuksia:
-// tietoja suojaavat Firestoren säännöt (firestore.rules).
-const FIREBASE = {
-  apiKey: 'AIzaSyDHgC_SQImzcgEHFOSLMbVBHQsKCvw6gys',
-  authDomain: 'kauppalista-6669.firebaseapp.com',
-  projectId: 'kauppalista-6669',
-  appId: '1:535568366982:web:fc6390831765392d35c007',
-};
-
-const db = initializeFirestore(initializeApp(FIREBASE), {
-  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
-});
+import { tietokanta, poistaKopio, kunListaPaattyy, siivoaVanhat, kelpaaId } from './kopiot.js';
 
 // Sovellus ei muista listoja: listaan pääsee vain sen linkillä.
 // Ainoa poikkeus: tässä välilehdessä juuri aloitettu, vielä tyhjä lista säilyy uudelleenlatauksessa
@@ -52,9 +38,7 @@ function satunnainen(tavuja) {
 const uusiListaId = () => satunnainen(16);   // 128 bittiä, 22 merkkiä
 const uusiTuoteId = () => 't' + [...crypto.getRandomValues(new Uint8Array(8))]
   .map(b => b.toString(16).padStart(2, '0')).join('');
-const kelpaaId = id => /^[A-Za-z0-9_-]{22}$/.test(id);
-
-const listaRef = () => doc(db, 'listat', listaId);
+const listaRef = () => doc(tietokanta(listaId), 'listat', listaId);
 
 // --- Tilat ---
 
@@ -139,11 +123,23 @@ function avaa(id) {
   }, virhe);
 }
 
+// Lista päättyi: näytetään ilmoitus ja poistetaan listan offline-kopio tältä laitteelta.
 function paattyi() {
   lopetaKuuntelu();
   kaytaAsetukset({});
   nayta('paattynyt');
+  if (listaId) poistaKopio(listaId);
 }
+
+// Toinen välilehti huomasi saman listan päättyneen ja poistaa sen kopion.
+kunListaPaattyy(id => {
+  if (id === listaId && !luonnos) {
+    lopetaKuuntelu();
+    kaytaAsetukset({});
+    nayta('paattynyt');
+  }
+  poistaKopio(id, false);
+});
 
 function virhe(e) {
   // Säännöt estävät tyhjän, vanhentuneen tai olemattoman listan lukemisen ja muokkaamisen.
@@ -356,7 +352,7 @@ paivitaYhteys();
 function kaynnista() {
   const id = location.hash.slice(1);
   if (!id) return naytaAloitus();
-  if (!kelpaaId(id)) return paattyi();
+  if (!kelpaaId(id)) { lopetaKuuntelu(); listaId = null; return paattyi(); }
   if (id !== listaId) avaa(id);
 }
 
@@ -368,6 +364,7 @@ for (const vanha of ['kauppalista-viimeisin', 'kauppalista-asetukset', 'kauppali
 }
 
 kaynnista();
+setTimeout(() => siivoaVanhat(() => listaId), 3000);
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {});
