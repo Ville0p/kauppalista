@@ -10,6 +10,7 @@ const TIEDOSTOT = [
   'style.css',
   'app.js',
   'osastot.js',
+  'asetukset.js',
   'fonts/carlito-400.woff2',
   'fonts/carlito-700.woff2',
   'manifest.json',

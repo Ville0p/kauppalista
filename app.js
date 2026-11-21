@@ -4,6 +4,9 @@ import {
   doc, onSnapshot, setDoc, updateDoc, deleteDoc, deleteField, serverTimestamp,
 } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js';
 import { tunnista, OSASTOT, MUUT } from './osastot.js';
+import { kaynnistaAsetukset } from './asetukset.js';
+
+kaynnistaAsetukset();
 
 // Firebase-verkkosovelluksen asetukset. Nämä eivät ole salaisuuksia:
 // tietoja suojaavat Firestoren säännöt (firestore.rules).
@@ -121,15 +124,15 @@ function piirra() {
     const nimi = document.createElement('button');
     nimi.type = 'button';
     nimi.className = 'nimi';
-    const emoji = tunnista(t.nimi).emoji;
-    if (emoji) {
-      const e = document.createElement('span');
-      e.className = 'emoji';
-      e.setAttribute('aria-hidden', 'true');
-      e.textContent = emoji;
-      nimi.append(e);
-    }
-    nimi.append(t.nimi);
+    // Emojin paikka on aina mukana (tyhjänäkin), jotta nimet alkavat samasta kohdasta.
+    const emoji = document.createElement('span');
+    emoji.className = 'emoji';
+    emoji.setAttribute('aria-hidden', 'true');
+    emoji.textContent = tunnista(t.nimi).emoji;
+    const teksti = document.createElement('span');
+    teksti.className = 'teksti';
+    teksti.textContent = t.nimi;
+    nimi.append(emoji, teksti);
     nimi.setAttribute('aria-pressed', t.otettu ? 'true' : 'false');
     pitkaPainallus(nimi, () => valitseOsasto(tid, t));
     nimi.addEventListener('click', () => {

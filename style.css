@@ -66,6 +66,20 @@ h1 { margin: 0; font-size: 24px; }
 }
 #jaa:active { filter: brightness(0.92); }
 
+.painikkeet { display: flex; align-items: center; gap: 6px; }
+#asetukset-nappi {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  color: #fff;
+  background: none;
+  border: 0;
+  border-radius: 50%;
+}
+#asetukset-nappi:active { background: rgba(255, 255, 255, 0.18); }
+
 #offline {
   margin: 0;
   padding: 10px 16px;
@@ -152,10 +166,24 @@ li.otettu .nimi::before { content: "✓"; background: var(--oranssi); }
   user-select: none;
   -webkit-touch-callout: none;
 }
-.emoji { flex: none; margin-right: -4px; font-size: 22px; line-height: 1; }
+/* Emojille varataan aina sama leveys, jotta nimet alkavat samasta kohdasta. */
+.emoji { flex: none; width: 28px; margin-right: -4px; text-align: center; font-size: 22px; line-height: 1; }
+.teksti { min-width: 0; }
 li.otettu .emoji { opacity: 0.5; }
+.ei-emojeja .emoji { display: none; }
 
-#osastovalinta {
+/* Leveässä ikkunassa sovellus näytetään kapeana, keskitettynä sarakkeena. */
+@media (min-width: 640px) {
+  html { background: #ece7e3; }
+  body {
+    max-width: 520px;
+    margin: 0 auto;
+    box-shadow: 0 0 24px rgba(0, 0, 0, 0.12);
+  }
+}
+
+/* Valintaikkunat (osaston valinta, asetukset) */
+.ikkuna {
   width: min(92vw, 420px);
   max-height: 90dvh;
   padding: 20px 16px 16px;
@@ -166,8 +194,8 @@ li.otettu .emoji { opacity: 0.5; }
   background: var(--tausta);
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
 }
-#osastovalinta::backdrop { background: rgba(0, 0, 0, 0.45); }
-#osastovalinta h2 { margin: 0 0 12px; font-size: 20px; }
+.ikkuna::backdrop { background: rgba(0, 0, 0, 0.45); }
+.ikkuna h2 { margin: 0 0 12px; font-size: 20px; }
 #osastovalinta-nimi { display: block; font-weight: 400; color: var(--harmaa); overflow-wrap: anywhere; }
 #osastovalinta-napit { display: grid; gap: 8px; }
 #osastovalinta-napit button,
@@ -182,6 +210,31 @@ li.otettu .emoji { opacity: 0.5; }
 }
 #osastovalinta-napit button.valittu { border-color: var(--oranssi); font-weight: 700; }
 #osastovalinta-peru { width: 100%; margin-top: 12px; text-align: center; background: none; color: var(--harmaa); }
+
+/* Asetukset */
+#asetukset-lista { display: grid; gap: 8px; }
+.asetus {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 56px;
+  padding: 0 16px;
+  background: var(--pohja);
+  border-radius: 12px;
+  cursor: pointer;
+}
+.asetus input { flex: none; width: 28px; height: 28px; margin: 0; accent-color: var(--oranssi); cursor: pointer; }
+#asetukset-valmis {
+  width: 100%;
+  min-height: 52px;
+  margin-top: 16px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--oranssi);
+  border: 0;
+  border-radius: 12px;
+}
 
 .poista {
   flex: none;

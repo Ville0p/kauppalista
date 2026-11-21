@@ -20,10 +20,15 @@
 <body>
   <header>
     <h1>Kauppalista</h1>
-    <button id="jaa" type="button" hidden>
-      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 3v12M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      Jaa
-    </button>
+    <div class="painikkeet">
+      <button id="jaa" type="button" hidden>
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 3v12M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Jaa
+      </button>
+      <button id="asetukset-nappi" type="button" aria-label="Asetukset">
+        <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+    </div>
   </header>
 
   <p id="offline" hidden>Ei yhteyttä. Muutokset siirtyvät muille, kun yhteys palaa.</p>
@@ -48,7 +53,13 @@
 
   <div id="ilmoitus" role="status" hidden></div>
 
-  <dialog id="osastovalinta" aria-labelledby="osastovalinta-otsikko">
+  <dialog id="asetukset" class="ikkuna" aria-labelledby="asetukset-otsikko">
+    <h2 id="asetukset-otsikko">Asetukset</h2>
+    <div id="asetukset-lista"></div>
+    <button id="asetukset-valmis" type="button">Valmis</button>
+  </dialog>
+
+  <dialog id="osastovalinta" class="ikkuna" aria-labelledby="osastovalinta-otsikko">
     <h2 id="osastovalinta-otsikko">Valitse osasto<span id="osastovalinta-nimi"></span></h2>
     <div id="osastovalinta-napit"></div>
     <button id="osastovalinta-peru" type="button">Peruuta</button>
